@@ -1,0 +1,52 @@
+{% extends "store/base.html" %}
+{% block content %}
+<h2 class="mb-4 fw-bold text-success">Your Cart</h2>
+
+{% if order.items.all %}
+<table class="table align-middle">
+  <thead>
+    <tr>
+      <th>Product</th>
+      <th class="text-end">Unit Price</th>
+      <th class="text-center">Qty</th>
+      <th class="text-end">Subtotal</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in order.items.all %}
+    {% with unit=item.product.display_price %}
+    <tr>
+      <td>{{ item.product.name }}</td>
+      <td class="text-end">₹{{ unit|floatformat:2 }}</td>
+      <td class="text-center">
+        <form action="{% url 'store:update_cart_quantity' item.id %}" method="post" class="d-inline">
+          {% csrf_token %}
+          <button name="action" value="decrease" class="btn btn-sm btn-outline-secondary">−</button>
+          <span class="mx-2">{{ item.quantity }}</span>
+          <button name="action" value="increase" class="btn btn-sm btn-outline-secondary">+</button>
+        </form>
+      </td>
+      <td class="text-end">₹{{ item.get_total_price|floatformat:2 }}</td>
+      <td class="text-end">
+        <form action="{% url 'store:remove_from_cart' item.id %}" method="post" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-outline-danger">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% endwith %}
+    {% endfor %}
+    <tr>
+      <td colspan="3" class="text-end fw-bold">Grand Total</td>
+      <td class="text-end fw-bold">₹{{ order.total_price|floatformat:2 }}</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+
+<a href="{% url 'store:checkout' %}" class="btn btn-success">Proceed to Checkout</a>
+{% else %}
+<p>Your cart is empty.</p>
+{% endif %}
+{% endblock %}

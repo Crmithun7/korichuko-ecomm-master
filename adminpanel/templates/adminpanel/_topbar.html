@@ -1,0 +1,24 @@
+<nav class="navbar navbar-expand-lg border-bottom bg-white sticky-top">
+  <div class="container-fluid">
+    <button class="btn btn-outline-secondary d-lg-none me-2" id="sidebarToggle">
+      ☰
+    </button>
+    <a class="navbar-brand fw-bold text-success" href="{% url 'adminpanel:dashboard' %}">Korichuko Admin</a>
+
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <!-- Theme (placeholder) -->
+      <button class="btn btn-outline-secondary" id="themeToggle" title="Theme">🌓</button>
+      <!-- Account -->
+      <div class="dropdown">
+        <button class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
+          {{ request.user.username }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{% url 'store:home' %}">Go to Storefront</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="{% url 'adminpanel:logout' %}">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>

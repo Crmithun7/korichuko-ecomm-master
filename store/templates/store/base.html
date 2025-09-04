@@ -1,0 +1,343 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Korichuko</title>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Bootstrap + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+
+    <!-- Your stylesheet (kept) -->
+    <link rel="stylesheet" href="{% static 'store/css/style.css' %}" />
+
+    {% block head %}{% endblock %}
+
+    <!-- ===== Premium UI theme (UI-only) ===== -->
+    <style>
+      :root{
+        /* Korichuko — premium sweet shop palette */
+        --kc-green: #2e8c6a;
+        --kc-green-600:#23795a;
+        --kc-gold: #d6b46f;
+        --kc-yellow:#ffc107;
+        --kc-ink: #212529;
+        --ring: 46 140 106; /* rgb focus ring */
+        --radius: 14px;
+      }
+
+      html,body{ scroll-behavior:smooth; }
+      body{
+        background:
+          radial-gradient(50% 40% at 10% 0%, #c7f0d980 0%, transparent 60%),
+          radial-gradient(45% 35% at 90% 10%, #ffeaba80 0%, transparent 60%),
+          #f8fffb;
+        color: var(--kc-ink);
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Navbar: glass + elevation */
+      .navbar{
+        background: rgba(255,255,255,.92)!important;
+        backdrop-filter: blur(6px);
+        border-bottom: 1px solid #eef1f2;
+        transition: box-shadow .18s ease, background-color .18s ease;
+      }
+      .navbar.scrolled{ box-shadow: 0 6px 18px rgba(16,22,26,.10); background: rgba(255,255,255,.96)!important; }
+      .navbar .nav-link:hover{ color: var(--kc-green); transform: translateY(-1px); transition: .15s; }
+
+      /* Search */
+      .navbar .form-control.rounded-pill{ border:1px solid #dee2e6; }
+      .navbar .form-control.rounded-pill:focus{
+        border-color: rgba(var(--ring)/.35);
+        box-shadow: 0 0 0 .25rem rgba(var(--ring)/.18);
+        background:#fff;
+      }
+
+      /* Buttons */
+      .btn{ border-radius: var(--radius); }
+      .btn-outline-success{
+        --bs-btn-color: var(--kc-green);
+        --bs-btn-border-color: var(--kc-green);
+        --bs-btn-hover-bg: var(--kc-green);
+        --bs-btn-hover-border-color: var(--kc-green);
+        --bs-btn-active-bg: var(--kc-green-600);
+        --bs-btn-active-border-color: var(--kc-green-600);
+        transition: transform .12s ease, box-shadow .18s ease;
+      }
+      .btn-success{
+        background: linear-gradient(135deg, var(--kc-green) 0%, var(--kc-green-600) 70%);
+        border: none;
+        transition: transform .12s, box-shadow .18s;
+      }
+      .btn-warning{
+        background: linear-gradient(135deg, #ffd65e, var(--kc-yellow));
+        border: none;
+      }
+      .btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0,0,0,.08); }
+
+      /* Cards */
+      .card{
+        border: 1px solid #eef1f2;
+        border-radius: 1.25rem;
+        box-shadow: 0 6px 18px rgba(16,22,26,.06);
+        transition: transform .12s ease, box-shadow .15s ease;
+      }
+      .card:hover{ transform: translateY(-2px); box-shadow: 0 10px 26px rgba(16,22,26,.10); }
+      .card-img-top{ border-radius: 1.25rem 1.25rem 0 0; }
+
+      /* Offcanvas cart */
+      .offcanvas{ backdrop-filter: blur(4px); }
+      .offcanvas-header{
+        position: sticky; top:0; z-index:2; background:#fff;
+        box-shadow: 0 6px 10px rgba(16,22,26,.06);
+      }
+
+      /* Cart badge animation */
+      #cart-badge{ transform-origin: 50% 50%; }
+      #cart-badge.pop{ animation: kc-pop .45s cubic-bezier(.2,.9,.25,1) both; }
+      @keyframes kc-pop{
+        0%{ transform: translate(-50%,-50%) scale(.85); }
+        40%{ transform: translate(-50%,-50%) scale(1.25); }
+        100%{ transform: translate(-50%,-50%) scale(1); }
+      }
+
+      /* Toasts */
+      .toast{ border-radius:12px; box-shadow:0 12px 28px rgba(16,22,26,.18); overflow:hidden; animation: kc-toast-in .22s ease-out both; }
+      @keyframes kc-toast-in{ from{ transform: translateY(6px); opacity:0; } to{ transform: translateY(0); opacity:1; } }
+
+      /* Footer icons */
+      footer a .bi{ transition: transform .15s ease, filter .15s ease; }
+      footer a .bi:hover{ transform: translateY(-1px) scale(1.06); filter: drop-shadow(0 3px 6px rgba(0,0,0,.12)); }
+
+      /* Focus */
+      :focus-visible{ outline:3px solid rgba(var(--ring)/.30); outline-offset:2px; border-radius: 10px; }
+      @media (prefers-reduced-motion: reduce){
+        *,*::before,*::after{ animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Offer Bar -->
+    <div class="bg-dark text-white text-center py-1" style="font-size:15px; letter-spacing:.5px;">
+      <i class="bi bi-percent"></i> Save 10% Extra On Your First Order
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top">
+      <div class="container align-items-center">
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'store:home' %}" aria-label="Korichuko home">
+          <img
+            src="{% static 'store/img/korichuko-logo.png' %}"
+            onerror="this.onerror=null;this.src='/media/korichuko-logo.png';"
+            alt="Korichuko"
+            style="height:50px"
+            width="140" height="50"
+            decoding="async" fetchpriority="high"
+          />
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNav">
+          <!-- Search (lg+) -->
+          <form class="d-none d-lg-flex mx-auto w-50" action="{% url 'store:shop' %}" method="get" role="search" aria-label="Site search">
+            <input name="q" class="form-control me-2 rounded-pill" type="search" placeholder="Search snacks..." aria-label="Search" />
+            <button class="btn btn-outline-success rounded-pill" type="submit"><i class="bi bi-search"></i></button>
+          </form>
+
+          <!-- Actions -->
+          <div class="d-flex align-items-center ms-auto gap-2">
+            <a href="{% url 'store:shop' %}" class="btn btn-outline-success d-none d-lg-inline">Shop</a>
+
+            <!-- Cart -->
+            <button class="btn btn-warning position-relative" type="button" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" aria-controls="cartOffcanvas" aria-label="Open cart">
+              <i class="bi bi-cart"></i>
+              {% if order and order.items.all %}
+                <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ order.items.count }}</span>
+              {% else %}
+                <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+              {% endif %}
+            </button>
+
+            {% if user.is_authenticated %}
+              <span class="d-none d-lg-inline ms-2 me-1 text-success small">Hi, {{ user.username }}</span>
+              <a href="{% url 'store:logout' %}" class="btn btn-outline-success btn-sm">Logout</a>
+            {% else %}
+              <a href="{% url 'store:login' %}" class="btn btn-outline-success btn-sm me-1">Login</a>
+              <a href="{% url 'store:signup' %}" class="btn btn-success btn-sm">Sign Up</a>
+            {% endif %}
+          </div>
+
+          <!-- Mobile search -->
+          <div class="py-2 d-lg-none w-100">
+            <form action="{% url 'store:shop' %}" method="get" class="d-flex" role="search" aria-label="Mobile search">
+              <input name="q" class="form-control rounded-start-pill" type="search" placeholder="Search snacks..." />
+              <button class="btn btn-outline-success rounded-end-pill ms-2" type="submit"><i class="bi bi-search"></i></button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Messages -->
+    <div class="container my-2">
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <!-- Content -->
+    <main id="content">{% block content %}{% endblock %}</main>
+
+    <!-- Footer -->
+    <footer class="bg-light mt-5 pt-5 pb-3 border-top border-2">
+      <div class="container">
+        <div class="row text-start text-md-center">
+          <div class="col-md-3 mb-3">
+            <img
+              src="{% static 'store/img/korichuko-logo.png' %}"
+              onerror="this.onerror=null;this.src='/media/korichuko-logo.png';"
+              alt="Korichuko"
+              style="height:100px"
+              width="200" height="100"
+              loading="lazy" decoding="async"
+            />
+            <div class="text-muted mt-2">© {% now 'Y' %} Korichuko</div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="fw-bold mb-2">Shop</div>
+            <ul class="list-unstyled">
+              <li><a href="{% url 'store:shop' %}?category=chips" class="text-decoration-none text-muted">Chips</a></li>
+              <li><a href="{% url 'store:shop' %}?category=sweets" class="text-decoration-none text-muted">Sweets</a></li>
+              <li><a href="{% url 'store:shop' %}" class="text-decoration-none text-muted">All Products</a></li>
+            </ul>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="fw-bold mb-2">Info</div>
+            <ul class="list-unstyled">
+              <li><a href="#" class="text-decoration-none text-muted">About Us</a></li>
+              <li><a href="#" class="text-decoration-none text-muted">Privacy</a></li>
+              <li><a href="#" class="text-decoration-none text-muted">Terms</a></li>
+            </ul>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="fw-bold mb-2">Contact</div>
+            <div class="text-muted small">customer@korichuko.com<br/>+91-000-000-0000</div>
+            <div class="mt-2">
+              <a href="#" aria-label="Instagram"><i class="bi bi-instagram fs-5 me-2"></i></a>
+              <a href="#" aria-label="Facebook"><i class="bi bi-facebook fs-5 me-2"></i></a>
+              <a href="#" aria-label="Twitter"><i class="bi bi-twitter fs-5"></i></a>
+            </div>
+          </div>
+        </div>
+        <div class="text-center text-muted mt-3 small">
+          Crafted with <i class="bi bi-heart-fill text-danger"></i> in India.
+        </div>
+      </div>
+    </footer>
+
+    <!-- Offcanvas Cart -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" aria-labelledby="cartOffcanvasLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title fw-bold" id="cartOffcanvasLabel">Your Cart</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        {% include 'store/_cart_items.html' %}
+      </div>
+    </div>
+
+    <!-- Toasts -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastArea"></div>
+
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- AJAX Cart + Utilities (matches your views) -->
+    <script>
+      function showToast(message, variant="success", delay=2200){
+        const area=document.getElementById("toastArea");
+        const el=document.createElement("div");
+        el.className=`toast align-items-center text-bg-${variant} border-0`;
+        el.setAttribute("role","status"); el.setAttribute("aria-live","polite"); el.setAttribute("aria-atomic","true");
+        el.innerHTML=`<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+        area.appendChild(el); const t=new bootstrap.Toast(el,{delay}); t.show(); el.addEventListener("hidden.bs.toast",()=>el.remove());
+      }
+      const toast={ success:(m)=>showToast(m,"success"), error:(m)=>showToast(m,"danger"), info:(m)=>showToast(m,"info") };
+
+      function getCSRFToken(){ return document.cookie.split("; ").find(r=>r.startsWith("csrftoken="))?.split("=")[1]; }
+      function refreshCartHTML(data){
+        const badge=document.querySelector("#cart-badge");
+        if(badge && typeof data.cart_count!=="undefined") badge.textContent=data.cart_count;
+        const offBody=document.querySelector("#cartOffcanvas .offcanvas-body");
+        if(offBody && data.cart_html) offBody.innerHTML=data.cart_html;
+        const oc=document.querySelector("#cartOffcanvas");
+        if(oc){ let inst=bootstrap.Offcanvas.getInstance(oc); if(!inst) inst=new bootstrap.Offcanvas(oc); inst.show(); }
+      }
+      async function handleJsonResponse(res, okMsg, cb){
+        let data={}; try{ data=await res.json(); }catch(_){}
+        if(res.status===401 || data.status==="unauthenticated"){ toast.error(data.message||"Please log in to continue"); return; }
+        if(data.status==="success"){ toast.success(data.message||okMsg); if(cb) cb(data); return; }
+        toast.error(data.message||"Something went wrong");
+      }
+
+      // Forms with class="add-to-cart-form"
+      document.addEventListener("submit", function(e){
+        const form=e.target.closest("form.add-to-cart-form"); if(!form) return;
+        e.preventDefault();
+        fetch(form.action,{ method:"POST", credentials:"same-origin",
+          headers:{ "X-Requested-With":"XMLHttpRequest", "X-CSRFToken":getCSRFToken() },
+          body:new FormData(form)
+        })
+        .then((r)=>handleJsonResponse(r,"Item added to cart",refreshCartHTML))
+        .catch(()=>toast.error("Network error"));
+      });
+
+      // Remove & quantity
+      document.addEventListener("click", function(e){
+        const rm=e.target.closest(".remove-item");
+        if(rm){
+          fetch(`/cart/remove/${rm.dataset.id}/`,{ method:"POST", credentials:"same-origin",
+            headers:{ "X-Requested-With":"XMLHttpRequest", "X-CSRFToken":getCSRFToken() }
+          })
+          .then((r)=>handleJsonResponse(r,"Removed from cart",refreshCartHTML))
+          .catch(()=>toast.error("Network error"));
+          return;
+        }
+        const q=e.target.closest(".update-qty");
+        if(q){
+          const fd=new FormData(); fd.append("action", q.dataset.action);
+          fetch(`/cart/update-quantity/${q.dataset.id}/`,{ method:"POST", credentials:"same-origin",
+            headers:{ "X-Requested-With":"XMLHttpRequest", "X-CSRFToken":getCSRFToken() }, body:fd
+          })
+          .then((r)=>handleJsonResponse(r,"Quantity updated",refreshCartHTML))
+          .catch(()=>toast.error("Network error"));
+        }
+      });
+
+      // Navbar elevation & badge pop
+      (function(){ const nav=document.querySelector('.navbar'); if(!nav) return;
+        const onScroll=()=>nav.classList.toggle('scrolled', window.scrollY>8);
+        onScroll(); window.addEventListener('scroll', onScroll, {passive:true});
+      })();
+      (function(){ const badge=document.getElementById('cart-badge'); if(!badge) return;
+        const pop=()=>{ badge.classList.remove('pop'); void badge.offsetWidth; badge.classList.add('pop'); };
+        new MutationObserver(pop).observe(badge,{characterData:true,childList:true,subtree:true});
+      })();
+    </script>
+
+    {% block script %}{% endblock %}
+  </body>
+</html>

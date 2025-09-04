@@ -1,0 +1,261 @@
+{# adminpanel/templates/adminpanel/login.html #}
+{% extends "adminpanel/auth_base.html" %}
+{% block title %}Staff Login{% endblock %}
+
+{% block content %}
+<style>
+  :root{
+    --brand-dark: #383634;
+    --brand-teal: #4C7C7D;
+    --brand-red:  #E45959;
+    --brand-ivory:#EDEAE7;
+
+    --glass-bg: rgba(255,255,255,0.10);
+    --ring: #4C7C7D44;
+    --text-on-dark: #F7F8FA;
+    --radius: 16px;
+  }
+
+  /* Background */
+  .sweet-bg{ position:fixed; inset:0; z-index:-3;
+    background:
+      radial-gradient(1000px 700px at 15% 15%, #4C7C7D22 0%, transparent 60%),
+      radial-gradient(900px 700px at 85% 20%, #E4595922 0%, transparent 60%),
+      linear-gradient(120deg, #121316, #17181c 60%, #1b1d22);
+  }
+  .sweet-fog{ position:fixed; inset:-10vmax; z-index:-2; pointer-events:none;
+    background:
+      radial-gradient(closest-side, #ffffff14, transparent 70%) 12% 18%/46vmax 46vmax no-repeat,
+      radial-gradient(closest-side, #4C7C7D1a, transparent 70%) 80% 15%/44vmax 44vmax no-repeat,
+      radial-gradient(closest-side, #E4595912, transparent 70%) 70% 82%/54vmax 54vmax no-repeat;
+    filter: blur(22px);
+    animation: fog-move 26s ease-in-out infinite alternate;
+  }
+  @keyframes fog-move{
+    0%{ transform: translate3d(-2vmax,-1vmax,0) scale(1); }
+    100%{ transform: translate3d(2vmax,1vmax,0) scale(1.04); }
+  }
+
+  /* Cursor-follow glow */
+  .cursor-ripple{
+    position: fixed; z-index:-1; pointer-events:none;
+    width: 34vmax; height: 34vmax; border-radius:50%;
+    background: radial-gradient(circle at center, #ffffff22 0%, #ffffff00 60%);
+    filter: blur(24px); mix-blend-mode: screen;
+    transform: translate3d(var(--mx,-50%), var(--my,-50%),0);
+    transition: transform 110ms linear;
+  }
+
+  .auth-wrap{ min-height: calc(100dvh - 2rem); display:grid; place-items:center; padding:2rem 1rem; }
+
+  /* Bigger liquid glass card */
+  .auth-card{
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(125%);
+    -webkit-backdrop-filter: blur(16px) saturate(125%);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: var(--radius) !important;
+    box-shadow: 0 12px 28px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+    transform: perspective(900px) rotateX(var(--tiltX,0deg)) rotateY(var(--tiltY,0deg));
+    animation: card-in .55s cubic-bezier(.22,.8,.28,1) both;
+    overflow: clip;
+    max-width: 460px;
+  
+    width: 100%;
+    /* padding: 1.2rem; */
+    padding: 1.5rem 1.2rem;   /* more vertical padding */
+    min-height: 520px;
+  }
+  @keyframes card-in{ from{opacity:0; transform: translateY(10px) scale(.985);} to{opacity:1; transform: translateY(0) scale(1);} }
+
+  .sweet-title{
+    background: linear-gradient(90deg, var(--brand-ivory), #f4f5f7 40%),
+                linear-gradient(90deg, var(--brand-teal), #6ea2a3);
+    background-clip:text; -webkit-background-clip:text; color:transparent;
+    font-weight: 800; letter-spacing:.35px;
+  }
+  .sweet-sub{ color:#cfd3da; }
+
+  /* Inputs + prefix icons bigger */
+  .input-group-custom{ position:relative; }
+  .input-icon{
+    position:absolute; top:50%; left:12px; transform:translateY(-50%);
+    color:#bfc7c9; font-size:1rem; pointer-events:none;
+    transition: color .18s, text-shadow .18s, transform .12s;
+  }
+  .input-group-custom input{
+    width:100%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: var(--text-on-dark);
+    border-radius: 12px; padding:.95rem 1rem .95rem 2.4rem;
+    outline:none;
+    font-size: 1rem;
+    transition: border-color .18s, box-shadow .18s, background .18s, transform .12s;
+  }
+  .input-group-custom input::placeholder{ color:#cfd3da90; }
+
+  .input-group-custom input:hover{ background: rgba(255,255,255,0.10); }
+  .input-group-custom input:focus{
+    border-color: var(--brand-teal);
+    box-shadow: 0 0 0 .25rem var(--ring);
+    background: rgba(255,255,255,0.12);
+    transform: translateY(-1px);
+  }
+  .input-group-custom:has(input:focus) .input-icon{
+    color: var(--brand-teal);
+    text-shadow: 0 0 18px #4C7C7D66;
+    transform: translateY(-50%) scale(1.04);
+  }
+
+  .form-label{ color:#f2f4f7; font-weight:600; opacity:.95; }
+
+  /* Bigger button */
+  .btn-primary{
+    position:relative; overflow:hidden; border:none; border-radius:12px;
+    font-weight:800; letter-spacing:.35px;
+    background: linear-gradient(135deg, #6ea2a3, var(--brand-teal) 45%, #87b7b8);
+    box-shadow: 0 10px 22px rgba(76,124,125,.28), 0 2px 8px rgba(0,0,0,.28);
+    transition: transform .12s ease, filter .2s ease;
+    font-size: 1rem;
+    padding: 0.9rem;
+  }
+  .btn-primary::after{
+    content:""; position:absolute; inset:-40% -10%;
+    background:
+      radial-gradient(120% 60% at 12% 50%, #ffffff66 0, #ffffff00 60%),
+      radial-gradient(120% 60% at 88% 50%, #ffffff40 0, #ffffff00 60%);
+    transform: translateX(-60%) skewX(-12deg);
+    opacity:.55; filter: blur(12px);
+    transition: transform .7s cubic-bezier(.22,.8,.28,1);
+  }
+  .btn-primary:hover{ filter:brightness(1.05); transform: translateY(-1px); }
+  .btn-primary:hover::after{ transform: translateX(12%) skewX(-12deg); }
+
+  /* Alerts + shake on error */
+  .auth-card .alert{
+    background: color-mix(in srgb, var(--brand-red) 18%, transparent);
+    color:#ffdede; border:1px solid color-mix(in srgb, var(--brand-red) 36%, transparent);
+    border-radius:12px;
+  }
+  @keyframes shake-x{
+    0%,100%{ transform: translateX(0); }
+    15%{ transform: translateX(-5px); }
+    30%{ transform: translateX(5px); }
+    45%{ transform: translateX(-4px); }
+    60%{ transform: translateX(4px); }
+    75%{ transform: translateX(-2px); }
+    90%{ transform: translateX(2px); }
+  }
+  .shake{ animation: shake-x .45s ease both; }
+  .error-glow{ box-shadow: 0 0 0 .25rem #E4595944 !important; border-color: var(--brand-red) !important; }
+
+
+  .footer-text{
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.65);
+  }
+
+</style>
+
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<div class="sweet-bg"></div>
+<div class="sweet-fog"></div>
+<div class="cursor-ripple" id="cursorRipple" aria-hidden="true"></div>
+
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <div class="card-body p-4 p-md-5">
+      <h4 class="sweet-title mb-1">Korichuko Admin</h4>
+      <p class="sweet-sub mb-4">Sign in with your staff account</p>
+
+      <form method="post" novalidate id="loginForm">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert py-2" id="formErrors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- Username -->
+        <div class="mb-4 input-group-custom" id="userGroup">
+          <span class="input-icon"><i class="fa-solid fa-user"></i></span>
+          {{ form.username }}
+        </div>
+
+        <!-- Password -->
+        <div class="mb-4 input-group-custom" id="passGroup">
+          <span class="input-icon" id="passIcon"><i class="fa-solid fa-lock"></i></span>
+          {{ form.password }}
+        </div>
+
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
+
+        <button class="btn btn-primary w-100">Sign in</button>
+      </form>
+
+      <div class="text-center mt-5">
+        <a class="small text-decoration-none" href="{% url 'store:home' %}">Back to store</a>
+      </div>
+    </div>
+  </div>
+    <!-- Footer text outside the card -->
+  <div class="footer-text">
+    Developed by <strong>Korichikkko Private Limited</strong>
+  </div>
+</div>
+
+<script>
+  // Cursor-follow ripple
+  (function(){
+    const ripple = document.getElementById('cursorRipple');
+    if(!ripple) return;
+    window.addEventListener('pointermove', (e)=>{
+      ripple.style.setProperty('--mx', (e.clientX - ripple.offsetWidth/2) + 'px');
+      ripple.style.setProperty('--my', (e.clientY - ripple.offsetHeight/2) + 'px');
+    }, {passive:true});
+  })();
+
+  // 3D tilt effect
+  (function(){
+    const card = document.querySelector('.auth-card'); if(!card) return;
+    const clamp = (n,a,b)=>Math.max(a,Math.min(b,n)); let raf=null;
+    function onMove(e){
+      const r = card.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width/2)) / r.width;
+      const dy = (e.clientY - (r.top + r.height/2)) / r.height;
+      const x = clamp((-dy)*6,-6,6), y = clamp((dx)*6,-6,6);
+      if(raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(()=>{
+        card.style.setProperty('--tiltX', x + 'deg');
+        card.style.setProperty('--tiltY', y + 'deg');
+      });
+    }
+    function reset(){ card.style.setProperty('--tiltX','0deg'); card.style.setProperty('--tiltY','0deg'); }
+    card.addEventListener('pointermove', onMove);
+    card.addEventListener('pointerleave', reset);
+  })();
+
+  // Placeholder text
+  (function(){
+    const u = document.querySelector('input[name="username"]');
+    const p = document.querySelector('input[name="password"]');
+    if(u && !u.placeholder) u.placeholder = "Enter username";
+    if(p && !p.placeholder) p.placeholder = "Enter password";
+  })();
+
+  // Shake if login fails
+  (function(){
+    const errorBox = document.getElementById('formErrors');
+    const passInput = document.querySelector('input[name="password"]');
+    const passIcon  = document.getElementById('passIcon');
+    if(errorBox && passInput && passIcon){
+      passIcon.classList.add('shake');
+      passInput.classList.add('error-glow');
+      setTimeout(()=> passInput.classList.remove('error-glow'), 1200);
+    }
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'store/base.html' %}
+{% block content %}
+<h2 class="mb-3 text-success">Razorpay Payment</h2>
+<p>Amount due: ₹{{ order.total_price|floatformat:2 }}</p>
+
+<div id="paymentProcessingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100vh;
+  background:rgba(255,255,255,0.8); z-index:1050; display:flex; justify-content:center; align-items:center; flex-direction:column;">
+  <div class="spinner-border text-success" role="status" style="width:4rem; height:4rem;">
+    <span class="visually-hidden">Processing payment.</span>
+  </div>
+  <div class="mt-3 fw-semibold text-success">Processing your payment.</div>
+</div>
+
+<form id="razorpayForm" action="{{ callback_url }}" method="POST">
+  {% csrf_token %}
+  <script
+    src="https://checkout.razorpay.com/v1/checkout.js"
+    data-key="{{ razorpay_merchant_key }}"
+    data-amount="{{ razorpay_amount }}"
+    data-currency="INR"
+    data-order_id="{{ razorpay_order_id }}"
+    data-buttontext="Pay Now"
+    data-name="Korichuko"
+    data-description="Purchase"
+    data-theme.color="#388e3c"
+  ></script>
+
+  <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+  <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+  <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+</form>
+
+<script>
+window.onload = function() {
+  const razorpayButton = document.querySelector('button.razorpay-payment-button');
+  if (razorpayButton) razorpayButton.style.display = 'none';
+
+  var options = {
+    "key": "{{ razorpay_merchant_key }}",
+    "amount": "{{ razorpay_amount }}",
+    "currency": "INR",
+    "name": "Korichuko",
+    "description": "Purchase",
+    "order_id": "{{ razorpay_order_id }}",
+    "handler": function (response){
+      document.getElementById('paymentProcessingOverlay').style.display = 'flex';
+      document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+      document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+      document.getElementById('razorpay_signature').value = response.razorpay_signature;
+      document.getElementById('razorpayForm').submit();
+    },
+    "modal": {
+      "ondismiss": function(){
+        document.getElementById('paymentProcessingOverlay').style.display = 'none';
+      }
+    }
+  };
+  var rzp1 = new Razorpay(options);
+  rzp1.open();
+};
+</script>
+{% endblock %}

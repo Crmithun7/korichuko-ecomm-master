@@ -1,0 +1,590 @@
+{% extends 'store/base.html' %} {% load static %}
+{% block content %}
+
+<style>
+  :root{
+    /* Option D — Saffron & Pistachio */
+    --brand-primary: #B55A1B;         /* saffron (primary CTAs, headings accents) */
+    --brand-primary-600:#9F4F18;      /* saffron hover */
+    --brand-accent:  #3E7F61;         /* pista (secondary accents, badges) */
+    --brand-gold:    #D7B56D;         /* luxe highlight */
+
+    /* compatibility tokens */
+    --brand-dark: #3b2d22;
+    --brand-teal: var(--brand-accent);
+    --brand-red:  #C14B4B;
+    --brand-ivory:#FFF4EA;
+
+    --panel: rgba(255,255,255,0.90);
+    --panel-brd: #EED8C6;
+    --panel-ring: rgba(181,90,27,0.28);
+    --text: #202020;
+    --muted: #6B6B6B;
+    --radius: 16px;
+
+    /* rhythm & type scale */
+    --fz-hero: clamp(1.6rem, 2.2vw, 2.2rem);
+    --fz-body: 1rem;
+    --fz-muted: .95rem;
+    --space-1: .5rem;
+    --space-2: .75rem;
+    --space-3: 1rem;
+    --space-4: 1.25rem;
+    --space-5: 1.75rem;
+    --space-6: 2.25rem;
+  }
+
+  /* Background (saffron + pista) */
+  .sweet-bg{ position:fixed; inset:0; z-index:-3;
+    background:
+      radial-gradient(1200px 800px at 15% 20%, #B55A1B22 0%, transparent 60%),
+      radial-gradient(1000px 800px at 85% 18%, #3E7F6122 0%, transparent 60%),
+      linear-gradient(120deg, #fff4ea, #ffefe2 60%, #ffe8d2);
+  }
+  .sweet-fog{ position:fixed; inset:-10vmax; z-index:-2; pointer-events:none;
+    background:
+      radial-gradient(closest-side, #ffffff26, transparent 70%) 12% 18%/46vmax 46vmax no-repeat,
+      radial-gradient(closest-side, #B55A1B1a, transparent 70%) 80% 15%/44vmax 44vmax no-repeat,
+      radial-gradient(closest-side, #3E7F6112, transparent 70%) 70% 82%/54vmax 54vmax no-repeat;
+    filter: blur(22px);
+    animation: fog-move 26s ease-in-out infinite alternate;
+  }
+  @keyframes fog-move{ 0%{ transform: translate3d(-2vmax,-1vmax,0) scale(1);} 100%{ transform: translate3d(2vmax,1vmax,0) scale(1.04);} }
+  .cursor-ripple{
+    position: fixed; z-index:-1; pointer-events:none;
+    width: 34vmax; height: 34vmax; border-radius:50%;
+    background: radial-gradient(circle at center, #ffffff40 0%, #ffffff00 60%);
+    filter: blur(24px); mix-blend-mode: screen;
+    transform: translate3d(var(--mx,-50%), var(--my,-50%),0);
+    transition: transform 110ms linear;
+  }
+
+  /* “Glassy” cards */
+  .glass{
+    background: var(--panel);
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border: 1px solid var(--panel-brd);
+    border-radius: var(--radius) !important;
+    box-shadow: 0 12px 28px rgba(181,90,27,.12), inset 0 1px 0 rgba(255,255,255,.5);
+    contain: content;
+  }
+  .tilt{
+    transform: perspective(900px) rotateX(var(--tiltX,0deg)) rotateY(var(--tiltY,0deg));
+    transition: box-shadow .2s ease;
+  }
+  .tilt:hover{ box-shadow: 0 16px 36px rgba(181,90,27,.18), inset 0 1px 0 rgba(255,255,255,.55); }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6{ letter-spacing:.2px; }
+  p, li, small{ line-height:1.6; }
+  .sweet-title{
+    background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+    background-clip:text; -webkit-background-clip:text; color:transparent;
+    font-weight:800; letter-spacing:.35px;
+  }
+  .sweet-sub{ color: var(--muted); }
+  .price-figure{ font-weight: 800; letter-spacing:.2px; }
+
+  /* Image interactions */
+  .main-product-image{
+    transition: transform .35s ease, filter .35s ease;
+    will-change: transform;
+    image-rendering: -webkit-optimize-contrast; backface-visibility:hidden;
+  }
+  .main-product-image:hover{ transform: scale(1.02); }
+  .thumbnail-item{
+    cursor:pointer; transition: transform .2s ease, border-color .2s ease, opacity .2s ease;
+    background: #fffdfa;
+  }
+  .thumbnail-item:hover{ transform: translateY(-2px); }
+  .thumbnail-item.active{ border-color: var(--brand-accent) !important; }
+
+  /* Buttons */
+  .btn-success{
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(181,90,27,.22);
+    transition: transform .12s ease, filter .18s ease, box-shadow .18s ease;
+  }
+  .btn-success:hover{ transform: translateY(-1px); filter:brightness(1.05); background: var(--brand-primary-600); border-color: var(--brand-primary-600); }
+  .btn-success:focus{ box-shadow: 0 0 0 .25rem var(--panel-ring); }
+  .btn-warning{
+    background: #E9A23B; border-color: #E9A23B; color:#422b00;
+    transition: transform .12s ease, filter .18s ease, box-shadow .18s ease;
+  }
+  .btn-warning:hover{ transform: translateY(-1px); filter:brightness(1.05); }
+  .btn-warning:focus{ box-shadow: 0 0 0 .25rem #eab30844; }
+  .btn-outline-secondary{ border-color:#d7c7b6; color:#5a4b3b; }
+  .btn-outline-secondary:hover{ background:#fff8f0; }
+
+  /* Inputs */
+  .input-group .btn{ user-select:none; }
+  .input-group input{
+    background:#fffdfa;
+    border:1px solid var(--panel-brd);
+    color: var(--text);
+  }
+  .input-group input:focus{
+    box-shadow: 0 0 0 .25rem var(--panel-ring);
+    border-color: var(--brand-primary);
+    background: #fff7ef;
+  }
+
+  /* Tabs */
+  .nav-tabs .nav-link{ color: var(--muted); position:relative; padding:.75rem 1rem; }
+  .nav-tabs .nav-link.active{ color: #3b2d22; }
+  .nav-tabs .nav-link::after{
+    content:""; position:absolute; left:20%; right:20%; bottom:0; height:3px;
+    background: linear-gradient(90deg, var(--brand-primary), var(--brand-gold));
+    transform: scaleX(0); transform-origin:center; transition: transform .3s ease;
+    border-radius: 99px;
+  }
+  .nav-tabs .nav-link.active::after{ transform: scaleX(1); }
+
+  /* Map Bootstrap “success” to our palette */
+  .text-success{ color: var(--brand-primary) !important; }
+  .badge.bg-success{ background: var(--brand-accent) !important; }
+
+  /* Related cards hover */
+  .card[data-tilt-card]{ transition: transform .18s ease, box-shadow .18s ease; contain: content; }
+  .card[data-tilt-card]:hover{ transform: translateY(-2px); box-shadow: 0 14px 28px rgba(181,90,27,.16); }
+
+  /* Focus visible */
+  :focus-visible{
+    outline: none;
+    box-shadow: 0 0 0 .2rem var(--panel-ring), 0 0 0 .3rem rgba(0,0,0,.04);
+    border-radius: 12px;
+  }
+
+  /* Reveal */
+  .reveal{ opacity:0; transform: translateY(10px); }
+  .reveal.show{ opacity:1; transform:none; transition: opacity .5s ease, transform .5s ease; }
+
+  /* Motion safety */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+    .sweet-fog, .cursor-ripple{ display:none !important; }
+    .tilt{ transform:none !important; }
+  }
+
+  /* Small screens */
+  @media (max-width: 576px){
+    .sweet-fog{ filter: blur(14px); }
+    .glass{ padding: var(--space-3) !important; }
+    .btn{ padding:.6rem .9rem; }
+  }
+</style>
+
+<div class="sweet-bg"></div>
+<div class="sweet-fog"></div>
+<div class="cursor-ripple" id="cursorRipple" aria-hidden="true"></div>
+
+<div class="container-fluid px-4 py-5">
+  <div class="row justify-content-center">
+    <div class="col-xl-10">
+
+      <!-- Header -->
+      <div class="mb-4 text-center">
+        <h2 class="sweet-title">Product Details</h2>
+        <p class="sweet-sub">crafted with the same vibe as your login screen ✨</p>
+      </div>
+
+      <!-- Main Product Section -->
+      <div class="row mb-5 g-5 reveal show">
+
+        <!-- Product Image Gallery -->
+        <div class="col-lg-5 col-md-6">
+          <div class="glass tilt overflow-hidden position-relative p-3" id="imgCard">
+            <div class="ratio ratio-1x1 mb-3">
+              {% if product.image %}
+                <img
+                  src="{{ product.image.url }}"
+                  alt="{{ product.name }}"
+                  class="w-100 h-100 main-product-image"
+                  id="mainImage"
+                  style="object-fit:cover;"
+                  width="800" height="800"
+                  decoding="async"
+                  fetchpriority="high"
+                />
+              {% else %}
+                <div class="d-flex align-items-center justify-content-center bg-light rounded-3">
+                  <span class="text-muted">No image available</span>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Arrows -->
+            <button class="btn btn-light position-absolute top-50 start-0 translate-middle-y ms-2 rounded-circle"
+                    style="width: 40px; height: 40px;" onclick="previousImage()" aria-label="Previous image">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="btn btn-light position-absolute top-50 end-0 translate-middle-y me-2 rounded-circle"
+                    style="width: 40px; height: 40px;" onclick="nextImage()" aria-label="Next image">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+
+            <!-- Thumbnails -->
+            <div class="d-flex gap-2 pt-2 justify-content-center">
+              {% if product.image %}
+              <div class="thumbnail-item active border border-2 rounded" style="width:60px;height:60px;"
+                   data-src="{{ product.image.url }}">
+                <img src="{{ product.image.url }}" class="w-100 h-100 rounded"
+                     style="object-fit:cover;" width="120" height="120"
+                     loading="lazy" decoding="async" alt="{{ product.name }} thumbnail"/>
+              </div>
+              {% endif %}
+              {# Add more .thumbnail-item blocks if you later support multiple images #}
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Information -->
+        <div class="col-lg-7 col-md-6">
+          <div class="glass tilt h-100 p-4" id="infoCard">
+            <div class="mb-3">
+              <h1 class="fw-bold mb-2 sweet-title" style="font-size:var(--fz-hero)">{{ product.name }}</h1>
+              {% if product.on_sale %}
+                <span class="badge bg-success text-white px-3 py-1 rounded-pill me-2">In Stock</span>
+              {% endif %}
+
+              <div class="d-flex align-items-center mt-2">
+                <div class="text-warning me-2" aria-hidden="true">
+                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                </div>
+                <span class="fw-bold me-2">5.0</span>
+                <span class="text-muted">(245 Reviews)</span>
+              </div>
+            </div>
+
+            <!-- Price -->
+            <div class="mb-3">
+              <div class="d-flex align-items-center gap-3">
+                {% if product.sale_price %}
+                  <span class="display-6 price-figure text-success">₹{{ product.sale_price }}</span>
+                  <span class="fs-5 text-muted text-decoration-line-through">₹{{ product.regular_price }}</span>
+                {% else %}
+                  <span class="display-6 price-figure text-success">₹{{ product.regular_price }}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-4">
+              <p class="text-muted mb-0">{{ product.description|default:"Handcrafted sweets made fresh daily with premium ingredients." }}</p>
+            </div>
+
+            <!-- Weight -->
+            {% if product.size_display %}
+            <div class="mb-4">
+              <h6 class="fw-bold mb-2">Weight</h6>
+              <div class="btn-group" role="group" aria-label="Weight options">
+                <input type="radio" class="btn-check" name="weight" id="weight1" autocomplete="off" checked>
+                <label class="btn btn-outline-success rounded-pill me-2" for="weight1">{{ product.size_display }}</label>
+                <input type="radio" class="btn-check" name="weight" id="weight2" autocomplete="off">
+                <label class="btn btn-outline-secondary rounded-pill me-2" for="weight2">1 Kg</label>
+                <input type="radio" class="btn-check" name="weight" id="weight3" autocomplete="off">
+                <label class="btn btn-outline-secondary rounded-pill me-2" for="weight3">2 Kg</label>
+                <input type="radio" class="btn-check" name="weight" id="weight4" autocomplete="off">
+                <label class="btn btn-outline-secondary rounded-pill" for="weight4">5 Kg</label>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Quantity + CTAs -->
+            <div class="mb-4">
+              <div class="row align-items-center g-3">
+                <div class="col-auto">
+                  <div class="input-group" style="width: 140px;">
+                    <button class="btn btn-outline-secondary" type="button" onclick="decrementQuantity()" aria-label="Decrease quantity">−</button>
+                    <input type="number" class="form-control text-center" value="1" min="1" id="quantity" aria-live="polite" aria-label="Product quantity">
+                    <button class="btn btn-outline-secondary" type="button" onclick="incrementQuantity()" aria-label="Increase quantity">+</button>
+                  </div>
+                </div>
+                <div class="col">
+                  <form action="{% url 'store:add_to_cart' product.id %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success rounded-pill px-4 py-2 me-3 ripple">
+                      <i class="bi bi-cart-plus me-2"></i>Add To Cart
+                    </button>
+                  </form>
+                  <button class="btn btn-warning rounded-pill px-4 py-2 me-3 ripple">Buy Now</button>
+                  <button class="btn btn-outline-secondary rounded-circle p-2" aria-label="Add to wishlist">
+                    <i class="bi bi-heart"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Meta -->
+            <div class="mb-1">
+              <div class="row text-sm">
+                <div class="col-12 mb-2">
+                  <span class="fw-semibold">SKU:</span>
+                  <span class="text-muted">{{ product.id|default:"GRFRS554SHJJ" }}</span>
+                </div>
+                <div class="col-12 mb-2">
+                  <span class="fw-semibold">Tags:</span>
+                  <span class="text-muted">{{ product.category.name }}, Saffron, Pistachio</span>
+                </div>
+                <div class="col-12">
+                  <span class="fw-semibold">Share:</span>
+                  <div class="d-inline-flex gap-2 ms-2">
+                    <a href="#" style="color:#3b5998" aria-label="Share on Facebook"><i class="bi bi-facebook"></i></a>
+                    <a href="#" style="color:#1da1f2" aria-label="Share on Twitter"><i class="bi bi-twitter"></i></a>
+                    <a href="#" style="color:#25d366" aria-label="Share on WhatsApp"><i class="bi bi-whatsapp"></i></a>
+                    <a href="#" style="color:#e4405f" aria-label="Share on Instagram"><i class="bi bi-instagram"></i></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="row mb-5 reveal">
+        <div class="col-12 glass p-3">
+          <ul class="nav nav-tabs border-0 justify-content-center mb-4" id="productTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-semibold px-4 py-3 border-0" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button">Description</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-semibold px-4 py-3 border-0" id="additional-tab" data-bs-toggle="tab" data-bs-target="#additional" type="button">Additional Information</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-semibold px-4 py-3 border-0" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button">Reviews</button>
+            </li>
+          </ul>
+
+          <div class="tab-content p-3 p-md-4" id="productTabContent">
+            <div class="tab-pane fade show active" id="description" role="tabpanel">
+              <p class="text-muted mb-4">{{ product.description|default:"Fresh, rich and festive. Perfect for gifting and celebrations." }}</p>
+              <ul class="list-unstyled">
+                <li class="mb-2"><i class="bi bi-check-circle-fill" style="color:var(--brand-accent)"></i> Premium nuts & saffron</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill" style="color:var(--brand-accent)"></i> Hygienic & freshly made</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill" style="color:var(--brand-accent)"></i> Ideal for festivals</li>
+              </ul>
+            </div>
+            <div class="tab-pane fade" id="additional" role="tabpanel">
+              <p class="text-muted">Additional product information would go here.</p>
+            </div>
+            <div class="tab-pane fade" id="reviews" role="tabpanel">
+              <p class="text-muted">Customer reviews would be displayed here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Related Products -->
+      <div class="mb-5 reveal">
+        <div class="text-center mb-5">
+          <h6 class="text-muted text-uppercase mb-2">Related Products</h6>
+          <h2 class="fw-bold">Explore <span class="sweet-title" style="color:inherit">Related Products</span></h2>
+        </div>
+
+        <div class="row g-4">
+          {% for related in related_products %}
+          <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card glass tilt h-100 rounded-4 position-relative overflow-hidden p-2" data-tilt-card>
+              {% if related.discount_percent %}
+              <div class="position-absolute top-0 start-0 z-3 m-3">
+                <span class="badge bg-success px-3 py-2 rounded-pill">{{ related.discount_percent }}% off</span>
+              </div>
+              {% endif %}
+
+              <div class="position-absolute top-0 end-0 z-3 m-3">
+                <button class="btn btn-light btn-sm rounded-circle p-2" aria-label="Add related item to wishlist">
+                  <i class="bi bi-heart"></i>
+                </button>
+              </div>
+
+              <div class="ratio ratio-1x1 rounded-3 overflow-hidden">
+                {% if related.image %}
+                  <img src="{{ related.image.url }}" class="w-100 h-100"
+                       style="object-fit:cover; transition:transform .35s ease;"
+                       loading="lazy" decoding="async" width="600" height="600"
+                       onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='none'"
+                       alt="{{ related.name }}" />
+                {% else %}
+                  <div class="d-flex align-items-center justify-content-center bg-light">
+                    <span class="text-muted">No image</span>
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="card-body text-center p-3">
+                <div class="mb-1"><small class="text-muted">{{ related.category.name }}</small></div>
+                <h6 class="fw-bold mb-2" style="color:#3b2d22">{{ related.name }}</h6>
+
+                <div class="d-flex justify-content-center align-items-center mb-2">
+                  <div class="text-warning me-1" aria-hidden="true"><small><i class="bi bi-star-fill"></i></small></div>
+                  <small class="fw-bold">4.8</small>
+                </div>
+
+                {% if related.size_display %}
+                <div class="mb-2"><small class="text-muted">{{ related.size_display }}</small></div>
+                {% endif %}
+
+                <div class="mb-3">
+                  {% if related.sale_price %}
+                    <span class="fw-bold" style="color:var(--brand-primary)">₹{{ related.sale_price }}</span>
+                    <span class="text-muted text-decoration-line-through ms-1">₹{{ related.regular_price }}</span>
+                  {% else %}
+                    <span class="fw-bold" style="color:var(--brand-primary)">₹{{ related.regular_price }}</span>
+                  {% endif %}
+                </div>
+
+                <form action="{% url 'store:add_to_cart' related.id %}" method="post">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-success btn-sm rounded-pill px-4 ripple">
+                    <i class="bi bi-cart-plus me-1"></i> Add
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-12 text-center">
+            <p class="text-muted">No related products available.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="row text-center g-4 mb-5 glass p-4 rounded-4 reveal">
+        <div class="col-lg-4 d-flex align-items-center justify-content-center">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle p-3 me-3" style="width: 60px; height: 60px; background:#E9A23B;">
+              <i class="bi bi-truck text-white fs-4"></i>
+            </div>
+            <div class="text-start">
+              <h6 class="fw-bold mb-1" style="color:#3b2d22">Free Shipping</h6>
+              <small class="text-muted">Free shipping for order above ₹50</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 d-flex align-items-center justify-content-center">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle p-3 me-3" style="width: 60px; height: 60px; background:var(--brand-accent);">
+              <i class="bi bi-credit-card text-white fs-4"></i>
+            </div>
+            <div class="text-start">
+              <h6 class="fw-bold mb-1" style="color:#3b2d22">Flexible Payment</h6>
+              <small class="text-muted">Multiple secure payment options</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 d-flex align-items-center justify-content-center">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle p-3 me-3" style="width: 60px; height: 60px; background:#62a889;">
+              <i class="bi bi-headset text-white fs-4"></i>
+            </div>
+            <div class="text-start">
+              <h6 class="fw-bold mb-1" style="color:#3b2d22">24×7 Support</h6>
+              <small class="text-muted">We support online all days</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // cursor ripple
+  (function(){
+    const ripple = document.getElementById('cursorRipple');
+    if(!ripple) return;
+    const move = (e)=>{
+      ripple.style.setProperty('--mx', (e.clientX - ripple.offsetWidth/2) + 'px');
+      ripple.style.setProperty('--my', (e.clientY - ripple.offsetHeight/2) + 'px');
+    };
+    window.addEventListener('pointermove', move, {passive:true});
+  })();
+
+  // tilt: disable on touch devices
+  function attachTilt(el){
+    if(!el) return;
+    if (matchMedia && matchMedia('(pointer: coarse)').matches) return;
+    const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+    let raf=null;
+    function onMove(e){
+      const r = el.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width/2)) / r.width;
+      const dy = (e.clientY - (r.top + r.height/2)) / r.height;
+      const x = clamp((-dy)*6,-6,6), y = clamp((dx)*6,-6,6);
+      if(raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(()=>{
+        el.style.setProperty('--tiltX', x + 'deg');
+        el.style.setProperty('--tiltY', y + 'deg');
+      });
+    }
+    function reset(){ el.style.setProperty('--tiltX','0deg'); el.style.setProperty('--tiltY','0deg'); }
+    el.addEventListener('pointermove', onMove, {passive:true});
+    el.addEventListener('pointerleave', reset);
+  }
+  attachTilt(document.getElementById('imgCard'));
+  attachTilt(document.getElementById('infoCard'));
+  document.querySelectorAll('[data-tilt-card]').forEach(attachTilt);
+
+  // reveal on scroll with fallback
+  (function(){
+    const items = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window)) {
+      items.forEach(el=> el.classList.add('show'));
+      return;
+    }
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('show'); });
+    }, {threshold: .14});
+    items.forEach(el=> io.observe(el));
+  })();
+
+  // quantity
+  function incrementQuantity(){ const i = document.getElementById('quantity'); i.value = (parseInt(i.value,10) || 1) + 1; }
+  function decrementQuantity(){ const i = document.getElementById('quantity'); const v = (parseInt(i.value,10) || 1); if(v>1) i.value = v-1; }
+  window.incrementQuantity = incrementQuantity;
+  window.decrementQuantity = decrementQuantity;
+
+  // ripple effect (cleanup-safe)
+  document.querySelectorAll('.ripple').forEach(btn=>{
+    btn.addEventListener('click', function(e){
+      const r=document.createElement('span'), rect=this.getBoundingClientRect(), size=Math.max(rect.width,rect.height);
+      Object.assign(r.style,{position:'absolute',borderRadius:'50%',pointerEvents:'none',width:size+'px',height:size+'px',
+        left:(e.clientX-rect.left-size/2)+'px',top:(e.clientY-rect.top-size/2)+'px',
+        background:'rgba(255,255,255,.35)',filter:'blur(2px)',transform:'scale(0)',transition:'transform .45s ease, opacity .6s ease'});
+      this.style.position='relative'; this.appendChild(r);
+      requestAnimationFrame(()=>{ r.style.transform='scale(1.6)'; r.style.opacity='0'; });
+      setTimeout(()=> r.remove(), 650);
+    }, {passive:true});
+  });
+
+  // thumbnails → main swap
+  document.querySelectorAll('.thumbnail-item').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const src = th.getAttribute('data-src');
+      if(!src) return;
+      const main = document.getElementById('mainImage');
+      if(main && main.src !== src){
+        document.querySelectorAll('.thumbnail-item').forEach(t=>t.classList.remove('active'));
+        th.classList.add('active');
+        main.style.opacity = .2;
+        setTimeout(()=>{ main.src = src; main.style.opacity = 1; }, 120);
+      }
+    });
+  });
+
+  // gallery nav placeholders (logic unchanged)
+  window.nextImage = function(){ console.log('Next image'); }
+  window.previousImage = function(){ console.log('Previous image'); }
+</script>
+
+{% endblock %}

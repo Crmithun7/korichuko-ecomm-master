@@ -1,0 +1,56 @@
+{% extends 'store/base.html' %}
+{% block content %}
+<div class="text-center">
+  <h2 class="text-success">Order Successful!</h2>
+  <h2 class="mb-3 text-success">Thank you! Your order is placed.</h2>
+<p class="text-muted">Order #{{ order.id }}</p>
+
+{% if order.items.all %}
+<div class="card shadow-sm border-0 rounded-4 p-5 w-50 mx-auto">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th style="width:72px;">Image</th>
+          <th>Product</th>
+          <th class="text-end">Qty</th>
+          <th class="text-end">Unit Price</th>
+          <th class="text-end">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in order.items.all %}
+          {% with unit=it.product.display_price %}
+          <tr>
+            <td>
+              {% if it.product.image %}
+                <img src="{{ it.product.image.url }}" alt="{{ it.product.name }}"
+                     class="rounded" style="width:56px;height:56px;object-fit:cover;">
+              {% else %}
+                <div class="bg-light border rounded d-flex align-items-center justify-content-center text-muted"
+                     style="width:56px;height:56px;font-size:10px;">
+                  No image
+                </div>
+              {% endif %}
+            </td>
+            <td>{{ it.product.name }}</td>
+            <td class="text-end">{{ it.quantity }}</td>
+            <td class="text-end">₹ {{ unit|floatformat:2 }}</td>
+            <td class="text-end">₹ {{ it.get_total_price|floatformat:2 }}</td>
+          </tr>
+          {% endwith %}
+        {% endfor %}
+        <tr>
+          <td colspan="4" class="text-end fw-bold">Total</td>
+          <td class="text-end fw-bold">₹ {{ order.total_price|floatformat:2 }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<p>No items found for this order.</p>
+{% endif %}
+
+</div>
+{% endblock %}

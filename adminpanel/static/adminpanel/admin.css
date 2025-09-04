@@ -1,0 +1,25 @@
+/* Sidebar layout */
+.sidebar {
+  width: 260px;
+  min-height: calc(100vh - 56px); /* subtract topbar height */
+}
+@media (max-width: 991.98px) {
+  .sidebar { position: fixed; top: 56px; bottom: 0; left: -260px; z-index: 1020; }
+  .sidebar.open { left: 0; box-shadow: 0 0 12px rgba(0,0,0,.15); }
+  #contentArea { width: 100%; }
+}
+
+/* Sidebar nav */
+.sidebar .nav-link {
+  border-radius: 10px;
+  color: #334155;
+}
+.sidebar .nav-link.active {
+  background: #e8f5ee;
+  color: #198754;
+  font-weight: 600;
+}
+.sidebar .nav-link:hover { background: #f2f5f8; }
+
+/* Cards */
+.card { border-radius: 1rem; }

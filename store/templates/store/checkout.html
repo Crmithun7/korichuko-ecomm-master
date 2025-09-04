@@ -1,0 +1,58 @@
+{% extends 'store/base.html' %}
+{% block content %}
+<h2 class="mb-4 fw-bold text-success">Checkout</h2>
+
+{% if order.items.all %}
+<ul class="list-group mb-3">
+  {% for item in order.items.all %}
+  <li class="list-group-item d-flex justify-content-between">
+    <span>{{ item.product.name }} (x{{ item.quantity }})</span>
+    <strong>₹{{ item.get_total_price|floatformat:2 }}</strong>
+  </li>
+  {% endfor %}
+  <li class="list-group-item d-flex justify-content-between bg-light">
+    <strong>Total:</strong>
+    <strong>₹{{ order.total_price|floatformat:2 }}</strong>
+  </li>
+</ul>
+
+<form id="checkoutForm" method="post">
+  {% csrf_token %}
+  <label class="me-3">
+    <input type="radio" name="payment_method" value="cod" checked>
+    Cash on Delivery
+  </label>
+  <label>
+    <input type="radio" name="payment_method" value="razorpay">
+    Razorpay
+  </label>
+  <br>
+  <button type="submit" class="btn btn-success mt-3">Place Order</button>
+</form>
+
+<!-- Loader Overlay for smoother UX -->
+<div id="processingOverlay" style="
+  display:none; position:fixed; top:0; left:0; width:100%; height:100vh;
+  background:rgba(255,255,255,0.85); z-index:2000;
+  flex-direction:column; justify-content:center; align-items:center;">
+  <div class="spinner-border text-success" style="width:4rem; height:4rem;" role="status">
+    <span class="visually-hidden">Processing.</span>
+  </div>
+  <div class="mt-3 fw-semibold text-success fs-5">Processing your order.</div>
+</div>
+
+<script>
+document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+  var paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+  document.getElementById('processingOverlay').style.display = 'flex';
+  if (paymentMethod === 'cod') {
+    e.preventDefault();
+    setTimeout(() => this.submit(), 800);
+  }
+});
+</script>
+
+{% else %}
+<p>No items in checkout.</p>
+{% endif %}
+{% endblock %}

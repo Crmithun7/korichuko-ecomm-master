@@ -1,0 +1,29 @@
+{% load static %}
+<aside id="sidebar" class="sidebar bg-white border-end">
+  <div class="sidebar-header d-flex align-items-center px-3 py-2 border-bottom">
+    <img src="{% static 'store/img/logo.png' %}" alt="" class="me-2" style="width:28px;height:28px;object-fit:cover" onerror="this.style.display='none'">
+    <strong>Korichuko</strong>
+  </div>
+  <div class="p-3">
+    <input class="form-control form-control-sm mb-3" placeholder="Search menu...">
+    <ul class="nav flex-column small sidebar-menu">
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'adminpanel:dashboard' %}">
+          <span class="me-2">🏠</span> Dashboard
+        </a>
+      </li>
+      <li class="nav-item mt-2 text-uppercase text-muted fw-bold">Shop Management</li>
+      <li><a class="nav-link {% if request.resolver_match.url_name == 'products' %}active{% endif %}" href="{% url 'adminpanel:products' %}"><span class="me-2">🏬</span> Products</a></li>
+      <li><a class="nav-link {% if request.resolver_match.url_name == 'orders' %}active{% endif %}" href="{% url 'adminpanel:orders' %}"><span class="me-2">🛒</span> Orders</a></li>
+      <li><a class="nav-link {% if request.resolver_match.url_name == 'customers' %}active{% endif %}" href="{% url 'adminpanel:customers' %}"><span class="me-2">👥</span> Customers</a></li>
+
+      <li class="nav-item mt-2 text-uppercase text-muted fw-bold">Marketing</li>
+      <li><a class="nav-link {% if request.resolver_match.url_name == 'coupons' %}active{% endif %}" href="{% url 'adminpanel:coupons' %}"><span class="me-2">🏷️</span> Coupons</a></li>
+
+      <li class="nav-item mt-2 text-uppercase text-muted fw-bold">Config</li>
+      <li><a class="nav-link {% if request.resolver_match.url_name == 'shipping' %}active{% endif %}" href="{% url 'adminpanel:shipping' %}"><span class="me-2">🚚</span> Shipping</a></li>
+      <li><a class="nav-link {% if request.resolver_match.url_name == 'currencies' %}active{% endif %}" href="{% url 'adminpanel:currencies' %}"><span class="me-2">💱</span> Currencies</a></li>
+      <li><a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}" href="{% url 'adminpanel:settings' %}"><span class="me-2">⚙️</span> Settings</a></li>
+    </ul>
+  </div>
+</aside>

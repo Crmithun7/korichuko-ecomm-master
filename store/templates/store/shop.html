@@ -1,0 +1,117 @@
+{% extends 'store/base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="row">
+  <!-- SIDEBAR FILTERS -->
+  <aside class="col-lg-3 mb-4">
+    <div class="p-4 bg-light rounded-4 shadow-sm sticky-top" style="top: 5rem">
+      <h5 class="fw-bold mb-3">Filter</h5>
+
+      <!-- Price Filter (uses regular/sale on backend filtering) -->
+      <form method="get" action="{% url 'store:shop' %}">
+        <div class="mb-4">
+          <label class="small text-secondary mb-1">Price</label>
+          <input type="range" class="form-range" min="0" max="1000" step="10" name="max_price" value="{{ max_price|default:'1000' }}">
+          <div class="d-flex justify-content-between small">
+            <span>₹0</span>
+            <span>₹{{ max_price|default:'1000' }}</span>
+          </div>
+        </div>
+
+        <!-- Category List -->
+        <div class="mb-4">
+          <label class="small text-secondary mb-1">Category</label>
+          <ul class="list-group small">
+            <li class="list-group-item {% if not request.GET.category %}active{% endif %}">
+              <a href="{% url 'store:shop' %}" class="text-decoration-none text-dark">All</a>
+            </li>
+            {% for category in categories %}
+            <li class="list-group-item {% if request.GET.category == category.slug %}active{% endif %}">
+              <a href="{% url 'store:shop' %}?category={{ category.slug }}&max_price={{ max_price|default:'1000' }}" class="text-decoration-none text-dark">{{ category.name }}</a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <button type="submit" class="btn btn-success btn-sm w-100 rounded-pill">Apply Filters</button>
+      </form>
+
+    </div>
+  </aside>
+
+  <!-- MAIN PRODUCTS GRID -->
+  <section class="col-lg-9">
+    <!-- Top bar: sorts & product count -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <span class="fw-bold">{{ products|length }} goods</span>
+      </div>
+      <div class="input-group input-group-sm" style="max-width: 240px">
+        <label class="input-group-text bg-light fw-semibold" for="sort-select">Sort by</label>
+        <select id="sort-select" class="form-select bg-white" onchange="location = this.value;">
+          <option value="{% url 'store:shop' %}?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}sort=popular" {% if request.GET.sort == 'popular' or not request.GET.sort %}selected{% endif %}>Popular</option>
+          <option value="{% url 'store:shop' %}?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}sort=price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+          <option value="{% url 'store:shop' %}?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}sort=price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Products Cards Grid -->
+    <div class="row g-4">
+      {% for product in products %}
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 rounded-4 position-relative hover-shadow">
+          {% if product.on_sale %}
+          <span class="badge bg-danger position-absolute top-0 start-0 m-2">Sale</span>
+          {% endif %}
+          <a href="{% url 'store:product_detail' product.id %}">
+            <img src="{{ product.image.url }}" class="card-img-top rounded-4" style="height: 170px; object-fit: contain;" alt="{{ product.name }}" />
+          </a>
+          <div class="card-body text-center">
+            <div class="fw-semibold mb-1" style="font-size: 1.1rem">
+              <a href="{% url 'store:product_detail' product.id %}" class="text-decoration-none text-dark">{{ product.name }}</a>
+            </div>
+
+            {% if product.size_display %}
+              <div class="text-muted small mb-1">{{ product.size_display }}</div>
+            {% elif product.size_value and product.size %}
+              <div class="text-muted small mb-1">
+                {{ product.size_value|floatformat:0 }} {{ product.size.abbreviation }}
+              </div>
+            {% endif %}
+
+            <div class="mb-2" style="font-size: 1.08rem">
+              {% if product.sale_price %}
+                <span class="fw-bold text-success">₹{{ product.sale_price }}</span>
+                <span class="text-muted text-decoration-line-through ms-1">₹{{ product.regular_price }}</span>
+              {% else %}
+                <span class="fw-bold text-success">₹{{ product.regular_price }}</span>
+              {% endif %}
+            </div>
+
+            <form action="{% url 'store:add_to_cart' product.id %}" method="post" class="d-inline add-to-cart-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-success btn-sm rounded-pill px-3">Add +</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col">
+        <div class="alert alert-warning">No products in this category or price range.</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<style>
+  .hover-shadow:hover {
+    box-shadow: 0 10px 15px rgb(0 0 0 / 0.1);
+    transform: translateY(-4px);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+</style>
+
+{% endblock %}

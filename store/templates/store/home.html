@@ -1,0 +1,457 @@
+{% extends 'store/base.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+/* ================= ULTRA+ SNACK THEME (CSS-ONLY) ================= */
+:root{
+  --snack:#ff7a00; --snack-2:#ffc155; --berry:#ff4d6d; --mint:#22c55e;
+  --cocoa:#2b170e; --cream:#fff4e5; --peach:#ffe4c7; --blush:#ffdcd1; --line:#efdfcd;
+  --r-xl:22px; --r-lg:18px; --r-md:14px; --r-sm:10px;
+  --sh1:0 10px 30px rgba(43,23,14,.08); --sh2:0 22px 56px rgba(43,23,14,.16);
+  --fast:.18s; --med:.35s; --slow:.9s;
+}
+
+/* choco-dark theme (checkbox hack) */
+.theme-switch:checked ~ .snack-scene{
+  --cream:#0e0a07; --peach:#19100b; --blush:#22130d; --line:#2b1a10;
+  --cocoa:#ffe8cf; --snack:#ff9a2b; --snack-2:#ffd37a; --berry:#ff7b97;
+}
+
+/* sticky promo bar */
+.promo-bar{
+  position:sticky; top:0; z-index:5;
+  backdrop-filter:saturate(1.4) blur(10px);
+  background:linear-gradient(90deg,
+    color-mix(in oklab,var(--snack),#fff 70%),
+    color-mix(in oklab,var(--snack-2),#fff 65%));
+  color:#3a1d0f; font-weight:800; letter-spacing:.1px;
+  border-bottom:1px solid color-mix(in oklab,var(--snack-2),#000 10%);
+}
+.promo-marquee{white-space:nowrap; overflow:hidden; position:relative; line-height:1}
+.promo-marquee span{display:inline-block; padding:10px 0; animation:marq 22s linear infinite}
+.promo-marquee span i{margin:0 .75rem}
+@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* floating “offer” conversion pill */
+.offer-pill{
+  position:fixed; right:16px; bottom:16px; z-index:6;
+  background:linear-gradient(135deg,var(--snack),var(--snack-2));
+  color:#3a1d0f; border:none; border-radius:999px; padding:.6rem 1rem; font-weight:900;
+  box-shadow:0 18px 40px rgba(255,138,0,.35);
+  display:flex; align-items:center; gap:.5rem; text-decoration:none;
+  animation:pulse 2.6s ease-in-out infinite;
+}
+.offer-pill i{font-size:1.1rem}
+@keyframes pulse{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+/* theme toggle chip */
+.theme-toggle{
+  position:fixed; right:16px; top:60px; z-index:6;
+  background:#fff; color:#3a1d0f; border:1px solid #f1dcc3; box-shadow:var(--sh1);
+  border-radius:999px; padding:.35rem .7rem; font-weight:800; cursor:pointer;
+  transition:transform var(--fast), box-shadow var(--fast);
+}
+.theme-toggle:hover{ transform:translateY(-1px); box-shadow:var(--sh2) }
+.theme-switch{ position:absolute; inset:-9999px }
+
+/* background scene + grain + blobs */
+.snack-scene{
+  position:relative; border-radius:24px; overflow:hidden; padding-block:0;
+  background:
+    radial-gradient(120% 120% at 10% 0%, var(--peach) 0%, var(--cream) 45%, #fff 100%),
+    linear-gradient(120deg, var(--cream), var(--peach), var(--blush));
+  background-size:120% 120%, 200% 200%; animation:bgShift 18s ease-in-out infinite;
+}
+.snack-scene::before{
+  content:""; position:absolute; inset:-4px; pointer-events:none;
+  background:
+    radial-gradient(240px 240px at 8% 28%, rgba(255,170,110,.18), transparent 60%),
+    radial-gradient(260px 260px at 88% 10%, rgba(255,210,120,.18), transparent 60%),
+    radial-gradient(260px 260px at 80% 88%, rgba(255,140,160,.16), transparent 60%);
+  animation:blobs 22s ease-in-out infinite;
+}
+.snack-scene::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background-image:radial-gradient(rgba(0,0,0,.03) 1px, transparent 1px);
+  background-size:6px 6px; opacity:.35; mix-blend-mode:multiply;
+}
+@keyframes bgShift{0%,100%{background-position:0% 50%,0% 50%}50%{background-position:100% 50%,100% 50%}}
+@keyframes blobs{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* waves */
+.wave{display:block;width:100%;height:48px;opacity:.55}
+
+/* section titles */
+.snack-title{display:flex;align-items:center;gap:.6rem;font-weight:900;color:var(--cocoa);letter-spacing:.2px}
+.snack-title em{background:linear-gradient(90deg,var(--snack),var(--snack-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.snack-title:after{content:"";flex:1;height:3px;border-radius:2px;background:linear-gradient(90deg,var(--snack),var(--snack-2));opacity:.35}
+
+/* rails with edge fade & chevrons */
+.rail{position:relative}
+.rail::before,.rail::after{
+  content:""; position:absolute; top:0; bottom:0; width:38px; z-index:1; pointer-events:none;
+  background:linear-gradient(90deg, rgba(255,255,255,0.96), transparent);
+}
+.theme-switch:checked ~ .snack-scene .rail::before,
+.theme-switch:checked ~ .snack-scene .rail::after{
+  background:linear-gradient(90deg, rgba(14,10,7,0.96), transparent);
+}
+.rail::after{right:0; transform:scaleX(-1)}
+.snack-scroll{gap:32px; scroll-snap-type:x mandatory; scroll-padding:12px}
+.snack-item{scroll-snap-align:start}
+.snack-scroll::-webkit-scrollbar{height:8px}
+.snack-scroll::-webkit-scrollbar-thumb{background:linear-gradient(90deg,var(--snack),var(--snack-2));border-radius:8px}
+
+/* chevrons */
+.scroll-hint{position:absolute; inset:auto 8px 12px auto; z-index:2; opacity:.9}
+.scroll-hint i{animation:hint .9s ease-in-out infinite}
+@keyframes hint{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+
+/* category chips */
+.cat-pill{width:120px;flex-shrink:0;text-align:center;transition:transform var(--med) cubic-bezier(.2,.8,.2,1)}
+.cat-img{
+  width:96px;height:96px;object-fit:cover;border-radius:99rem;border:3px solid #fff;outline:3px solid var(--line);
+  box-shadow:var(--sh1); transition:transform var(--med) cubic-bezier(.2,.8,.2,1),filter .35s ease;
+  background:radial-gradient(circle at 50% 20%, #fff 0 40%, transparent 41%);
+}
+.cat-pill:hover{transform:translateY(-6px) rotate(-.6deg)}
+.cat-pill:hover .cat-img{transform:scale(1.1) rotate(.8deg);filter:saturate(1.15)}
+
+/* product cards: gradient border + magnetic lift */
+.product-card{
+  position:relative; width:236px; flex-shrink:0; border-radius:16px;
+  border:1px solid var(--line)!important; background:#fff; box-shadow:var(--sh1);
+  transform:perspective(900px) translateZ(0);
+  transition:transform var(--med) cubic-bezier(.2,.8,.2,1), box-shadow var(--med), border-color var(--med), filter var(--med);
+}
+.product-card::before{
+  content:""; position:absolute; inset:-1px; border-radius:inherit; padding:1px;
+  background:conic-gradient(from 0deg, var(--snack), var(--snack-2), var(--snack), var(--snack-2));
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude; opacity:0; transition:opacity .25s ease; pointer-events:none;
+}
+.product-card:hover{transform:perspective(900px) rotateX(3deg) rotateY(-2deg) translateY(-10px); box-shadow:var(--sh2); border-color:#ead9c6!important; filter:saturate(1.02)}
+.product-card:hover::before{opacity:1; animation:spinBorder 6s linear infinite}
+@keyframes spinBorder{to{transform:rotate(360deg)}}
+
+/* square image stage + steam + sheen */
+.stage{position:relative; overflow:hidden; border-top-left-radius:16px;border-top-right-radius:16px; aspect-ratio:1/1;
+  background:radial-gradient(120% 100% at 50% 0%, #fff 0%, #fff7ee 60%, #fff2e0 100%);
+}
+.stage img{width:100%;height:100%;object-fit:cover;object-position:center;transition:transform var(--med) cubic-bezier(.2,.8,.2,1)}
+.product-card:hover .stage img{transform:translateY(-3px) scale(1.06)}
+/* steam (soft bubbles up) */
+.stage .steam{
+  position:absolute; inset:auto 0 0 0; height:50%;
+  background:
+    radial-gradient(12px 12px at 20% 90%, rgba(255,255,255,.30) 0 40%, transparent 41%),
+    radial-gradient(10px 10px at 60% 100%, rgba(255,255,255,.24) 0 40%, transparent 41%),
+    radial-gradient(14px 14px at 80% 95%, rgba(255,255,255,.22) 0 40%, transparent 41%);
+  filter: blur(1px);
+  animation:steamUp 4.5s ease-in-out infinite;
+}
+@keyframes steamUp{
+  0%{transform:translateY(0); opacity:.4}
+  50%{transform:translateY(-14%); opacity:.2}
+  100%{transform:translateY(0); opacity:.4}
+}
+/* sheen ring */
+.stage::after{
+  content:"";position:absolute;inset:-40%;
+  background:conic-gradient(from 0deg,transparent 0 10%,rgba(255,255,255,.28) 12%,transparent 14%);
+  animation:spinSheen 7s linear infinite;mix-blend-mode:soft-light;pointer-events:none
+}
+@keyframes spinSheen{to{transform:rotate(360deg)}}
+
+/* sale badge + urgency bar */
+.badge-sale{background:linear-gradient(135deg,var(--berry),#ff6b88);color:#fff;font-size:.72rem;border-radius:12px;box-shadow:0 6px 18px rgba(255,77,109,.25);animation:badgeBob 2.4s ease-in-out infinite}
+@keyframes badgeBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.urgency{
+  height:6px; border-radius:999px; overflow:hidden; background:#ffe6ea; position:relative; margin-top:.35rem;
+}
+.urgency::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:68%;
+  background:repeating-linear-gradient(45deg, #ff8aa1 0 10px, #ffadbd 10px 20px);
+  animation:progressMove 1.8s linear infinite;
+  border-radius:inherit;
+}
+@keyframes progressMove{to{background-position:40px 0}}
+
+/* title clamp (+fallback) */
+.product-title{
+  margin:0;color:var(--cocoa);font-weight:800;line-height:1.25;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-overflow:ellipsis;
+}
+@supports not (-webkit-line-clamp:2){.product-title{display:block;max-height:calc(1.25em * 2);overflow:hidden}}
+.meta{color:#7d6a5c}
+
+/* price twinkle */
+.price-now,.price-sale{color:var(--cocoa);font-weight:800;font-size:1.12rem}
+.price-sale{color:#b84a4a; position:relative}
+.price-sale::after{
+  content:""; position:absolute; right:-10px; top:-6px; width:10px; height:10px; border-radius:50%;
+  background: radial-gradient(circle, #fff 0, #fff 35%, transparent 36%);
+  animation:twinkle 1.8s ease-in-out infinite;
+}
+@keyframes twinkle{0%,100%{transform:scale(.6);opacity:.2}50%{transform:scale(1);opacity:.9}}
+.price-old{color:#9b897f;text-decoration:line-through}
+
+/* button: shimmer + burst + sparkles on hover */
+.btn-snack{
+  --bg:linear-gradient(135deg,var(--snack),var(--snack-2));
+  background:var(--bg); color:#3a1d0f; font-weight:900; border:none; border-radius:999px;
+  box-shadow:0 10px 26px rgba(255,138,0,.25); position:relative; overflow:hidden;
+  transition:transform var(--fast), filter var(--fast), box-shadow var(--fast);
+}
+.btn-snack:hover{transform:translateY(-1px);filter:saturate(1.06);box-shadow:0 12px 30px rgba(255,138,0,.34)}
+.btn-snack:active{transform:translateY(0)}
+/* shimmer */
+.btn-snack::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-130%);transition:transform .65s ease}
+.btn-snack:hover::before{transform:translateX(130%)}
+/* confetti burst on click */
+.btn-snack:active::after{
+  content:""; position:absolute; left:50%; top:50%; width:14px; height:14px; transform:translate(-50%,-50%);
+  background:
+    radial-gradient(#fff 2px, transparent 3px) 0 0/8px 8px,
+    radial-gradient(var(--snack) 2px, transparent 3px) 4px 4px/8px 8px,
+    radial-gradient(var(--berry) 2px, transparent 3px) 0 4px/8px 8px,
+    radial-gradient(var(--snack-2) 2px, transparent 3px) 4px 0/8px 8px;
+  animation:burst .6s ease forwards;
+}
+@keyframes burst{to{opacity:0; transform:translate(-50%,-70%) scale(2)}}
+/* sparkles while hovering */
+.btn-snack:hover .spark{
+  opacity:.8; animation:sparkle 1.4s linear infinite;
+}
+.spark{
+  pointer-events:none; position:absolute; inset:0; opacity:0;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(255,255,255,.45) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 30%, rgba(255,255,255,.35) 0 2px, transparent 3px),
+    radial-gradient(circle at 40% 70%, rgba(255,255,255,.35) 0 2px, transparent 3px);
+}
+@keyframes sparkle{0%{transform:translateY(0)}50%{transform:translateY(-3px)}100%{transform:translateY(0)}}
+
+/* card bounce when pressing Add (using :has — progressive) */
+@supports selector(:has(*)){
+  .product-card:has(.btn-snack:active){transform:translateY(-4px) scale(.995)}
+}
+
+/* reveals */
+@media (prefers-reduced-motion:no-preference){
+  .reveal{opacity:0;transform:translateY(16px);animation:reveal .6s ease forwards}
+  .d1{animation-delay:.08s}.d2{animation-delay:.16s}.d3{animation-delay:.24s}.d4{animation-delay:.32s}
+  @keyframes reveal{to{opacity:1;transform:translateY(0)}}
+}
+
+/* banners */
+.banner-hero{border-radius:16px;box-shadow:var(--sh1);transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease}
+.banner-hero:hover{transform:translateY(-6px) scale(1.01);box-shadow:var(--sh2)}
+</style>
+
+<!-- Promo & theme switch -->
+<div class="promo-bar">
+  <div class="container d-flex align-items-center justify-content-between">
+    <div class="promo-marquee">
+      <span>🍪 Fresh today • 🥟 Hand-fried snacks • 🚚 Free delivery over ₹499 • ✨ Extra 10% off on first order • 🍬 Made with love • 🍪 Fresh today • 🥟 Hand-fried snacks • 🚚 Free delivery over ₹499 • ✨ Extra 10% off on first order</span>
+    </div>
+  </div>
+</div>
+<input id="themeSwitch" type="checkbox" class="theme-switch" />
+<label for="themeSwitch" class="theme-toggle" title="Toggle theme">🌞 / 🌙</label>
+
+<!-- Floating conversion pill -->
+<a href="{% url 'store:shop' %}?discounted=1" class="offer-pill"><i class="bi bi-lightning-charge"></i> Today’s Deals</a>
+
+<!-- Animated scene -->
+<div class="snack-scene">
+
+  <!-- top wave -->
+  <svg class="wave" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,0 C150,100 350,0 600,60 C850,120 1050,20 1200,80 L1200,0 L0,0 Z" fill="url(#grad)"></path>
+    <defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity=".0"/>
+    </linearGradient></defs>
+  </svg>
+
+  <div class="container my-4">
+
+    <!-- Banners -->
+    <div class="row g-3 reveal">
+      <div class="col-md-8">
+        <img src="/media/banners/home-banner.png" class="img-fluid banner-hero" alt="Main Banner" loading="lazy" decoding="async">
+      </div>
+      <div class="col-md-4">
+        <div class="mb-2">
+          <img src="/media/banners/offer-banner.png" class="img-fluid banner-hero" alt="Coupon Offer" loading="lazy" decoding="async">
+        </div>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="d-flex justify-content-between align-items-center my-4">
+      <h5 class="snack-title m-0"><i class="bi bi-list-ul"></i> <em>Categories</em></h5>
+      <a href="{% url 'store:shop' %}" class="snack-link">View all</a>
+    </div>
+    <div class="rail">
+      <div class="d-flex align-items-center overflow-auto pb-2 mb-4 snack-scroll reveal d1">
+        {% for category in categories %}
+          <div class="cat-pill snack-item me-4">
+            <img src="{{ category.image_url }}" class="cat-img mb-2" alt="{{ category.name }}" loading="lazy" decoding="async">
+            <div class="fw-semibold" style="color:var(--cocoa)">{{ category.name }}</div>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="scroll-hint"><i class="bi bi-chevron-right"></i></div>
+    </div>
+
+    <!-- Discounts -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="snack-title m-0"><i class="bi bi-tag"></i> <em>Discounts for you</em></h5>
+      <a href="{% url 'store:shop' %}?discounted=1" class="snack-link">View all</a>
+    </div>
+    <div class="rail">
+      <div class="d-flex align-items-center overflow-auto pb-2 mb-4 snack-scroll reveal d2">
+        {% for product in discounted_products %}
+        <article class="card product-card me-4 snack-item">
+          <div class="stage">
+            <a href="{% url 'store:product_detail' product.pk %}">
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+              {% if product.sale_price %}
+                <span class="badge badge-sale position-absolute top-0 start-0 m-2 px-2 py-1">Sale</span>
+              {% endif %}
+            </a>
+            <!-- steam overlay -->
+            <i class="steam"></i>
+          </div>
+          <div class="card-body p-3 text-center">
+            <a href="{% url 'store:product_detail' product.pk %}" class="text-decoration-none">
+              <h6 class="product-title" title="{{ product.name }}">{{ product.name }}</h6>
+            </a>
+
+            {% if product.size_display %}
+              <div class="meta small mb-1">{{ product.size_display }}</div>
+            {% elif product.size_value and product.size %}
+              <div class="meta small mb-1">{{ product.size_value|floatformat:0 }} {{ product.size.abbreviation }}</div>
+            {% endif %}
+
+            <div class="mb-2">
+              {% if product.sale_price %}
+                <span class="price-sale">₹{{ product.sale_price }}</span>
+                <span class="price-old ms-2">₹{{ product.regular_price }}</span>
+                <!-- animated urgency bar for sale items -->
+                <div class="urgency" aria-hidden="true"></div>
+              {% else %}
+                <span class="price-now">₹{{ product.regular_price }}</span>
+              {% endif %}
+            </div>
+
+            <form action="{% url 'store:add_to_cart' product.pk %}" method="post" class="add-to-cart-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-snack btn-sm w-100 position-relative">
+                <span class="spark"></span>
+                <i class="bi bi-cart-plus me-1"></i> Add to Cart
+              </button>
+            </form>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      <div class="scroll-hint"><i class="bi bi-chevron-right"></i></div>
+    </div>
+
+    <!-- Making Process -->
+    <div class="my-4">
+      <h5 class="snack-title"><i class="bi bi-basket"></i> <em>Making Process</em></h5>
+      <div class="row g-3">
+        <div class="col-md-4 reveal"><img src="/media/banners/making1.png" class="img-fluid rounded banner-hero" alt="Making step" loading="lazy" decoding="async"></div>
+        <div class="col-md-4 reveal d1"><img src="/media/banners/making2.png" class="img-fluid rounded banner-hero" alt="Making step" loading="lazy" decoding="async"></div>
+        <div class="col-md-4 d-flex reveal d2">
+          <div class="p-4 rounded flex-fill d-flex flex-column align-items-center justify-content-center text-center"
+               style="background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.9));border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh2);backdrop-filter:blur(8px);">
+            <div class="d-inline-flex align-items-center gap-2 mb-3"
+                 style="background:#fff;border:1px dashed #ffd08a;color:var(--cocoa);padding:.35rem .6rem;border-radius:999px;font-weight:800;">
+              <i class="bi bi-emoji-smile"></i> 200+ happy customers
+            </div>
+            <a href="{% url 'store:shop' %}" class="btn btn-snack btn-sm px-4 position-relative">
+              <span class="spark"></span> See how we cook
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New additions -->
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-5">
+      <h5 class="snack-title m-0"><i class="bi bi-star"></i> <em>New additions</em></h5>
+      <a href="{% url 'store:shop' %}?new=1" class="snack-link">View all</a>
+    </div>
+    <div class="rail">
+      <div class="d-flex align-items-center overflow-auto pb-2 mb-4 snack-scroll reveal d3">
+        {% for product in new_products %}
+        <article class="card product-card me-4 snack-item">
+          <div class="stage">
+            <a href="{% url 'store:product_detail' product.pk %}">
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+              {% if product.sale_price %}
+                <span class="badge badge-sale position-absolute top-0 start-0 m-2 px-2 py-1">Sale</span>
+              {% endif %}
+            </a>
+            <i class="steam"></i>
+          </div>
+          <div class="card-body p-3 text-center">
+            <a href="{% url 'store:product_detail' product.pk %}" class="text-decoration-none">
+              <h6 class="product-title" title="{{ product.name }}">{{ product.name }}</h6>
+            </a>
+
+            {% if product.size_display %}
+              <div class="meta small mb-1">{{ product.size_display }}</div>
+            {% elif product.size_value and product.size %}
+              <div class="meta small mb-1">{{ product.size_value|floatformat:0 }} {{ product.size.abbreviation }}</div>
+            {% endif %}
+
+            <div class="mb-2">
+              {% if product.sale_price %}
+                <span class="price-sale">₹{{ product.sale_price }}</span>
+                <span class="price-old ms-2">₹{{ product.regular_price }}</span>
+                <div class="urgency" aria-hidden="true"></div>
+              {% else %}
+                <span class="price-now">₹{{ product.regular_price }}</span>
+              {% endif %}
+            </div>
+
+            <form action="{% url 'store:add_to_cart' product.pk %}" method="post" class="add-to-cart-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-snack btn-sm w-100 position-relative">
+                <span class="spark"></span>
+                <i class="bi bi-cart-plus me-1"></i> Add to Cart
+              </button>
+            </form>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      <div class="scroll-hint"><i class="bi bi-chevron-right"></i></div>
+    </div>
+
+    <!-- How we work -->
+    <div class="my-5">
+      <h5 class="snack-title mb-3"><i class="bi bi-lightning"></i> <em>How we work</em></h5>
+      <div class="row text-center g-4">
+        <div class="col-6 col-md-3"><i class="bi bi-bag-check fs-1 bob-1" style="color:var(--snack)"></i><div class="fw-semibold mt-2" style="color:var(--cocoa)">Order Placed</div><small class="text-muted">Confirmed instantly</small></div>
+        <div class="col-6 col-md-3"><i class="bi bi-box-seam fs-1 bob-2" style="color:var(--snack)"></i><div class="fw-semibold mt-2" style="color:var(--cocoa)">Packaging</div><small class="text-muted">Sealed for freshness</small></div>
+        <div class="col-6 col-md-3"><i class="bi bi-thermometer-snow fs-1 bob-3" style="color:var(--snack)"></i><div class="fw-semibold mt-2" style="color:var(--cocoa)">Temperature</div><small class="text-muted">Maintained at every step</small></div>
+        <div class="col-6 col-md-3"><i class="bi bi-truck fs-1 bob-4" style="color:var(--snack)"></i><div class="fw-semibold mt-2" style="color:var(--cocoa)">Delivery</div><small class="text-muted">Fast & on-time</small></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- bottom wave -->
+  <svg class="wave" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,80 C150,20 350,120 600,60 C850,0 1050,100 1200,40 L1200,120 L0,120 Z" fill="white"></path>
+  </svg>
+</div>
+
+{% endblock %}

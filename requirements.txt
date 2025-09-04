@@ -1,0 +1,26 @@
+# ---- Core runtime (keep these) ----
+Django>=4.2.16,<4.3
+gunicorn==23.0.0
+whitenoise==6.7.0
+dj-database-url==3.0.1
+PyMySQL==1.1.2
+python-dotenv==1.0.1
+
+# ---- Django ecosystem (only what you actually import) ----
+django-allauth==65.10.0          # requires Django >= 4.2.16
+django-crispy-forms==2.4
+crispy-bootstrap4==2025.6
+django-cors-headers==4.7.0
+django-countries==7.6.1
+djangorestframework==3.15.2
+django-jazzmin==3.0.1
+django-admin-argon-dashboard==1.0.25
+
+# ---- App-level deps you referenced ----
+Pillow==11.3.0
+razorpay==1.2.0
+stripe==12.4.0
+PyJWT==2.10.1
+requests==2.32.3
+django-cloudinary-storage
+cloudinary

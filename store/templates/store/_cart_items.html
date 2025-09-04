@@ -1,0 +1,22 @@
+{% if order and order.items.all %}
+  {% for item in order.items.all %}
+    <div class="d-flex align-items-center mb-3">
+      <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 50px; height: 50px; object-fit: cover;" class="rounded me-3">
+      <div class="flex-grow-1">
+        <div class="fw-semibold">{{ item.product.name }}</div>
+        <div class="d-flex align-items-center my-1">
+          <button class="btn btn-sm btn-outline-secondary update-qty" data-id="{{ item.id }}" data-action="decrease">-</button>
+          <span class="mx-2">{{ item.quantity }}</span>
+          <button class="btn btn-sm btn-outline-secondary update-qty" data-id="{{ item.id }}" data-action="increase">+</button>
+        </div>
+        <div class="text-success fw-bold">₹{{ item.product.display_price|floatformat:2 }}</div>
+      </div>
+      <button class="btn btn-sm btn-outline-danger ms-2 remove-item" data-id="{{ item.id }}">&times;</button>
+    </div>
+  {% endfor %}
+  <hr />
+  <div class="fw-bold text-end fs-5 mb-3">Total: ₹{{ order.total_price|floatformat:2 }}</div>
+  <a href="{% url 'store:checkout' %}" class="btn btn-success w-100">Proceed to Checkout</a>
+{% else %}
+  <p>Your cart is empty.</p>
+{% endif %}

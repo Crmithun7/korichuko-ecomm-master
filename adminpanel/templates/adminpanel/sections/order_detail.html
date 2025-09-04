@@ -1,0 +1,63 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}Order #{{ order.id }}{% endblock %}
+{% block content %}
+<h3 class="mb-3">Order #{{ order.id }}</h3>
+
+<div class="mb-3">
+  <span class="me-2">User: <strong>{{ order.user.username }}</strong></span>
+  Status:
+  {% if order.completed %}
+    <span class="badge bg-success">Completed</span>
+  {% else %}
+    <span class="badge bg-warning text-dark">Pending</span>
+  {% endif %}
+  <a class="btn btn-sm btn-outline-primary ms-3" href="{% url 'adminpanel:order_toggle_completed' order.id %}">Toggle Complete</a>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th style="width:72px;">Image</th>
+          <th>Product</th>
+          <th class="text-end">Qty</th>
+          <th class="text-end">Unit Price</th>
+          <th class="text-end">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in items %}
+          {% with unit=it.product.display_price %}
+          <tr>
+            <td>
+              {% if it.product.image %}
+                <img
+                  src="{{ it.product.image.url }}"
+                  alt="{{ it.product.name }}"
+                  class="rounded"
+                  style="width:56px;height:56px;object-fit:cover;"
+                />
+              {% else %}
+                <div class="bg-light border rounded d-flex align-items-center justify-content-center text-muted"
+                     style="width:56px;height:56px;font-size:10px;">
+                  No image
+                </div>
+              {% endif %}
+            </td>
+            <td>{{ it.product.name }}</td>
+            <td class="text-end">{{ it.quantity }}</td>
+            <td class="text-end">₹ {{ unit|floatformat:2 }}</td>
+            <td class="text-end">₹ {{ it.get_total_price|floatformat:2 }}</td>
+          </tr>
+          {% endwith %}
+        {% endfor %}
+        <tr>
+          <td colspan="4" class="text-end fw-bold">Total</td>
+          <td class="text-end fw-bold">₹ {{ order.total_price|floatformat:2 }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

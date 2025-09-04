@@ -1,0 +1,56 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}Orders{% endblock %}
+{% block content %}
+<h3 class="mb-3">Orders</h3>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-auto">
+    <select name="status" class="form-select">
+      <option value="">All</option>
+      <option value="pending"   {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+    </select>
+  </div>
+  <div class="col-auto"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Search order id / user"></div>
+  <div class="col-auto"><button class="btn btn-outline-success">Filter</button></div>
+</form>
+
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>User</th>
+          <th class="text-end">Total</th>
+          <th>Status</th>
+          <th width="120"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in items %}
+          <tr>
+            <td>#{{ o.id }}</td>
+            <td>{{ o.user.username }}</td>
+            <td class="text-end">₹ {{ o.total_price|floatformat:2 }}</td>
+            <td>
+              {% if o.completed %}
+                <span class="badge bg-success">Completed</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Pending</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'adminpanel:order_detail' o.pk %}">View</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-muted">No orders.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "adminpanel/partials/pagination.html" with page_obj=page_obj %}
+{% endblock %}
