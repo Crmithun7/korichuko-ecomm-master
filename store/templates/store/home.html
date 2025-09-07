@@ -205,11 +205,32 @@
 
 /* title clamp (+fallback) */
 .product-title{
-  margin:0;color:var(--cocoa);font-weight:800;line-height:1.25;
-  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-overflow:ellipsis;
+  margin: 0;
+  color: var(--cocoa);
+  font-weight: 800;
+  line-height: 1.25;
+
+  /* Primary (widely supported in WebKit/Blink) */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+
+  /* Common bits */
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* Progressive standard property (harmless where unsupported) */
+  line-clamp: 2;
 }
-@supports not (-webkit-line-clamp:2){.product-title{display:block;max-height:calc(1.25em * 2);overflow:hidden}}
-.meta{color:#7d6a5c}
+
+/* Fallback for engines without line-clamp support */
+@supports not (-webkit-line-clamp: 2) {
+  .product-title{
+    display: block;
+    max-height: calc(1.25em * 2); /* line-height × lines */
+  }
+}
+
 
 /* price twinkle */
 .price-now,.price-sale{color:var(--cocoa);font-weight:800;font-size:1.12rem}

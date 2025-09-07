@@ -138,10 +138,30 @@
   }
   .fav:hover{ transform:translateY(-2px) } .fav.active{ color:#ff4d6d }
 
+/* 2-line clamp with proper standard + prefixed props */
+.title{
+  margin:0;
+  font-weight:800;
+  color:var(--cocoa);
+  line-height:1.25;
+
+  /* truncation */
+  display:-webkit-box;            /* legacy WebKit */
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;          /* legacy */
+  line-clamp: 2;                  /* standard */
+  overflow:hidden;
+  text-overflow: ellipsis;
+}
+
+/* Graceful fallback where line-clamp isn’t supported */
+@supports not ((-webkit-line-clamp: 2) or (line-clamp: 2)){
   .title{
-    margin:0; font-weight:800; color:var(--cocoa); line-height:1.25;
-    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+    display:block;                /* no multi-line clamp available */
+    max-height: calc(1.25em * 2); /* 2 lines × line-height */
   }
+}
+
   .meta{ color:#7d6a5c; font-size:.9rem }
   .price-now{ font-weight:900; color:#1b7f30 }
   .price-old{ color:#9b897f; text-decoration:line-through; margin-left:.35rem }
