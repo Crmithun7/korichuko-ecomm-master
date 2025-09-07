@@ -98,6 +98,7 @@
     content:""; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; opacity:0;
     background:conic-gradient(from 0deg, var(--snack), var(--snack-2), var(--snack));
     -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+     mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite:xor; mask-composite:exclude; transition:opacity .25s ease;
   }
   .product-card:hover::before{ opacity:1; animation:spinBorder 6s linear infinite }

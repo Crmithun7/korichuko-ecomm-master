@@ -39,6 +39,7 @@
     content:""; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; opacity:0;
     background: conic-gradient(from 10deg, #ffdca6, #ffe8c6, #f9e6cc, #ffdca6);
     -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+     mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite:xor; mask-composite:exclude; padding:1px; transition:opacity .25s ease;
   }
   .glass.aurora:hover::after{ opacity:1; animation: spin 8s linear infinite }
