@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Korichuko</title>
-    
+
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- Bootstrap + Icons -->
@@ -16,49 +16,100 @@
 
     {% block head %}{% endblock %}
 
-    <!-- ===== Premium UI theme (UI-only) ===== -->
+    <!-- Preload logo for snappier paint -->
+    <link rel="preload" as="image" href="{% static 'store/img/korichuko-logo-brown.png' %}" imagesizes="(max-width: 991px) 140px, 180px" />
+
+    <!-- ===== Premium UI + Home-like ambient scene (Snack Orange palette) ===== -->
     <style>
       :root{
-        /* Korichuko — premium sweet shop palette */
-        --kc-green: #2e8c6a;
-        --kc-green-600:#23795a;
-        --kc-gold: #d6b46f;
-        --kc-yellow:#ffc107;
+        /* === Brand palette → snack orange === */
+        --kc-green: #ff7a00;        /* primary brand color (orange) */
+        --kc-green-600:#ff9a2b;     /* darker/hover */
+        --kc-gold: #ffd37a;         /* soft mango gold */
+        --kc-yellow:#ffcd6b;        /* warm yellow for accents */
         --kc-ink: #212529;
-        --ring: 46 140 106; /* rgb focus ring */
+        --ring: 255 122 0;
         --radius: 14px;
+
+        /* Ambient image for scene; switch to a STATIC path if your media 404s */
+        --ambient-url: url('/media/banners/ambient-upload.jpg');
+
+        --snack:#ff7a00; --snack-2:#ffc155; --berry:#ff4d6d;
+        --cocoa:#2b170e; --ink2:#3a1d0f;
+        --cream:#fff7ef; --peach:#ffe3c3; --blush:#ffd6ca; --line-cream:#efdfcd;
       }
 
       html,body{ scroll-behavior:smooth; }
       body{
         background:
-          radial-gradient(50% 40% at 10% 0%, #c7f0d980 0%, transparent 60%),
-          radial-gradient(45% 35% at 90% 10%, #ffeaba80 0%, transparent 60%),
-          #f8fffb;
+          radial-gradient(50% 40% at 10% 0%, #ffedd6aa 0%, transparent 60%),
+          radial-gradient(45% 35% at 90% 10%, #ffe7bf99 0%, transparent 60%),
+          #fffaf5;
         color: var(--kc-ink);
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
       }
 
-      /* Navbar: glass + elevation */
+      /* ——— LOGO sizing (NEW) ——— */
+      .brand-logo{ height:50px; width:auto; image-rendering:-webkit-optimize-contrast; }
+      @media (min-width: 992px){ .brand-logo{ height:58px; } }
+      .brand-logo-footer{ height:100px; width:auto; }
+
+      /* ===== Ambient SCENE (like Home) ===== */
+      .kc-scene{
+        position:relative; border-radius:20px; overflow:hidden;
+        background:
+          radial-gradient(120% 120% at 10% 0%, var(--peach) 0%, var(--cream) 45%, #fff 100%),
+          linear-gradient(120deg, var(--cream), var(--peach), var(--blush));
+        background-size:120% 120%, 200% 200%;
+        animation:kcSceneShift 18s ease-in-out infinite;
+      }
+      .kc-scene::before{
+        content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+        background-image: var(--ambient-url);
+        background-size:cover; background-position:center;
+        opacity:.18; mix-blend-mode:multiply;
+        filter:saturate(1.06) contrast(1.03) brightness(1.05);
+        transform:scale(1.08);
+        animation:kcSlowPan 42s ease-in-out infinite alternate;
+      }
+      .kc-scene::after{
+        content:""; position:absolute; inset:-25% -15%; z-index:1; pointer-events:none;
+        background:
+          conic-gradient(from 180deg at 70% 20%, rgba(255,255,255,.25), transparent 25% 50%, rgba(255,255,255,.18) 75%, transparent 100%),
+          radial-gradient(220px 180px at 15% 10%, rgba(255,170,110,.16), transparent 60%),
+          radial-gradient(260px 220px at 85% 85%, rgba(255,140,160,.14), transparent 60%);
+        animation:kcGlowFloat 24s ease-in-out infinite;
+      }
+      .kc-grain{
+        position:absolute; inset:0; z-index:2; pointer-events:none; opacity:.28; mix-blend-mode:soft-light;
+        background-image:radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px);
+        background-size:6px 6px; animation:kcGrainShift 8s steps(2,end) infinite;
+      }
+      @keyframes kcSceneShift{0%,100%{background-position:0% 50%,0% 50%}50%{background-position:100% 50%,100% 50%}}
+      @keyframes kcSlowPan{0%{transform:scale(1.08) translateX(0)}100%{transform:scale(1.1) translateX(-1.4%)}}
+      @keyframes kcGlowFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+      @keyframes kcGrainShift{0%,100%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}50%{transform:translate(-1px,1px)}75%{transform:translate(1px,1px)}}
+
+      .kc-wave{display:block;width:100%;height:48px;opacity:.55}
+
+      /* Navbar + UI polish (unchanged) */
       .navbar{
         background: rgba(255,255,255,.92)!important;
         backdrop-filter: blur(6px);
-        border-bottom: 1px solid #eef1f2;
+        border-bottom: 1px solid #ffeee0;
         transition: box-shadow .18s ease, background-color .18s ease;
       }
       .navbar.scrolled{ box-shadow: 0 6px 18px rgba(16,22,26,.10); background: rgba(255,255,255,.96)!important; }
       .navbar .nav-link:hover{ color: var(--kc-green); transform: translateY(-1px); transition: .15s; }
 
-      /* Search */
-      .navbar .form-control.rounded-pill{ border:1px solid #dee2e6; }
+      .navbar .form-control.rounded-pill{ border:1px solid #ffe1c7; background:#fffdf9; }
       .navbar .form-control.rounded-pill:focus{
         border-color: rgba(var(--ring)/.35);
         box-shadow: 0 0 0 .25rem rgba(var(--ring)/.18);
         background:#fff;
       }
 
-      /* Buttons */
       .btn{ border-radius: var(--radius); }
       .btn-outline-success{
         --bs-btn-color: var(--kc-green);
@@ -70,34 +121,34 @@
         transition: transform .12s ease, box-shadow .18s ease;
       }
       .btn-success{
+        color:#fff;
         background: linear-gradient(135deg, var(--kc-green) 0%, var(--kc-green-600) 70%);
         border: none;
         transition: transform .12s, box-shadow .18s;
       }
       .btn-warning{
-        background: linear-gradient(135deg, #ffd65e, var(--kc-yellow));
+        color:#4a2a00;
+        background: linear-gradient(135deg, #ffe08d, var(--kc-gold));
         border: none;
       }
-      .btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0,0,0,.08); }
+      .btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 18px rgba(255,122,0,.18); }
 
-      /* Cards */
       .card{
-        border: 1px solid #eef1f2;
+        border: 1px solid #ffe7d2;
         border-radius: 1.25rem;
-        box-shadow: 0 6px 18px rgba(16,22,26,.06);
+        box-shadow: 0 6px 18px rgba(255,122,0,.06);
         transition: transform .12s ease, box-shadow .15s ease;
+        background:#fffefb;
       }
-      .card:hover{ transform: translateY(-2px); box-shadow: 0 10px 26px rgba(16,22,26,.10); }
+      .card:hover{ transform: translateY(-2px); box-shadow: 0 10px 26px rgba(255,122,0,.12); }
       .card-img-top{ border-radius: 1.25rem 1.25rem 0 0; }
 
-      /* Offcanvas cart */
       .offcanvas{ backdrop-filter: blur(4px); }
       .offcanvas-header{
         position: sticky; top:0; z-index:2; background:#fff;
-        box-shadow: 0 6px 10px rgba(16,22,26,.06);
+        box-shadow: 0 6px 10px rgba(255,122,0,.08);
       }
 
-      /* Cart badge animation */
       #cart-badge{ transform-origin: 50% 50%; }
       #cart-badge.pop{ animation: kc-pop .45s cubic-bezier(.2,.9,.25,1) both; }
       @keyframes kc-pop{
@@ -106,16 +157,13 @@
         100%{ transform: translate(-50%,-50%) scale(1); }
       }
 
-      /* Toasts */
       .toast{ border-radius:12px; box-shadow:0 12px 28px rgba(16,22,26,.18); overflow:hidden; animation: kc-toast-in .22s ease-out both; }
       @keyframes kc-toast-in{ from{ transform: translateY(6px); opacity:0; } to{ transform: translateY(0); opacity:1; } }
 
-      /* Footer icons */
       footer a .bi{ transition: transform .15s ease, filter .15s ease; }
-      footer a .bi:hover{ transform: translateY(-1px) scale(1.06); filter: drop-shadow(0 3px 6px rgba(0,0,0,.12)); }
+      footer a .bi:hover{ transform: translateY(-1px) scale(1.06); filter: drop-shadow(0 3px 6px rgba(255,122,0,.18)); }
 
-      /* Focus */
-      :focus-visible{ outline:3px solid rgba(var(--ring)/.30); outline-offset:2px; border-radius: 10px; }
+      :focus-visible{ outline:3px solid rgba(var(--ring)/.26); outline-offset:2px; border-radius: 10px; }
       @media (prefers-reduced-motion: reduce){
         *,*::before,*::after{ animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; }
       }
@@ -123,22 +171,28 @@
   </head>
   <body>
     <!-- Offer Bar -->
-    <div class="bg-dark text-white text-center py-1" style="font-size:15px; letter-spacing:.5px;">
+    <div class="text-white text-center py-1" style="font-size:15px; letter-spacing:.5px; background:linear-gradient(90deg,#ff9a2b,#ff7a00);">
       <i class="bi bi-percent"></i> Save 10% Extra On Your First Order
     </div>
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top">
       <div class="container align-items-center">
+
+        <!-- ===== NEW: picture element uses your logo ===== -->
         <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'store:home' %}" aria-label="Korichuko home">
-          <img
-            src="{% static 'store/img/korichuko-logo.png' %}"
-            onerror="this.onerror=null;this.src='/media/korichuko-logo.png';"
-            alt="Korichuko"
-            style="height:50px"
-            width="140" height="50"
-            decoding="async" fetchpriority="high"
-          />
+          <picture>
+            <!-- Optional WebP if you add it -->
+            <source srcset="{% static 'store/img/korichuko-logo-brown.webp' %}" type="image/webp" />
+            <img
+              src="{% static 'store/img/korichuko-logo-brown.png' %}"
+              onerror="this.onerror=null;this.src='/media/korichuko-logo.png';"
+              alt="Korichuko"
+              class="brand-logo"
+              width="180" height="58"
+              decoding="async" fetchpriority="high"
+            />
+          </picture>
         </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -198,22 +252,44 @@
       {% endif %}
     </div>
 
-    <!-- Content -->
-    <main id="content">{% block content %}{% endblock %}</main>
+    <!-- ======= CONTENT wrapped in Home-like ambient scene ======= -->
+    <svg class="kc-wave" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id="kcTop" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity=".0"/>
+      </linearGradient></defs>
+      <path d="M0,0 C150,100 350,0 600,60 C850,120 1050,20 1200,80 L1200,0 L0,0 Z" fill="url(#kcTop)"></path>
+    </svg>
+
+    <div class="kc-scene my-3 my-md-4">
+      <div class="kc-grain"></div>
+      <div class="container py-3 py-md-4" id="content">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+
+    <svg class="kc-wave" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,80 C150,20 350,120 600,60 C850,0 1050,100 1200,40 L1200,120 L0,120 Z" fill="white"></path>
+    </svg>
 
     <!-- Footer -->
     <footer class="bg-light mt-5 pt-5 pb-3 border-top border-2">
       <div class="container">
         <div class="row text-start text-md-center">
           <div class="col-md-3 mb-3">
-            <img
-              src="{% static 'store/img/korichuko-logo.png' %}"
-              onerror="this.onerror=null;this.src='/media/korichuko-logo.png';"
-              alt="Korichuko"
-              style="height:100px"
-              width="200" height="100"
-              loading="lazy" decoding="async"
-            />
+
+            <!-- ===== NEW: footer logo uses your asset, too ===== -->
+            <picture>
+              <source srcset="{% static 'store/img/korichuko-logo-brown.webp' %}" type="image/webp" />
+              <img
+                src="{% static 'store/img/korichuko-logo-brown.png' %}"
+                onerror="this.onerror=null;this.src='/media/korichuko-logo.png';"
+                alt="Korichuko"
+                class="brand-logo-footer"
+                width="200" height="100"
+                loading="lazy" decoding="async"
+              />
+            </picture>
+
             <div class="text-muted mt-2">© {% now 'Y' %} Korichuko</div>
           </div>
           <div class="col-md-3 mb-3">
@@ -243,7 +319,7 @@
           </div>
         </div>
         <div class="text-center text-muted mt-3 small">
-          Crafted with <i class="bi bi-heart-fill text-danger"></i> in India.
+          Crafted with <i class="bi bi-heart-fill" style="color:#ff4d6d;"></i> in India.
         </div>
       </div>
     </footer>
@@ -265,7 +341,7 @@
     <!-- Bootstrap Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- AJAX Cart + Utilities (matches your views) -->
+    <!-- AJAX Cart + Utilities (unchanged) -->
     <script>
       function showToast(message, variant="success", delay=2200){
         const area=document.getElementById("toastArea");
@@ -280,7 +356,7 @@
       function getCSRFToken(){ return document.cookie.split("; ").find(r=>r.startsWith("csrftoken="))?.split("=")[1]; }
       function refreshCartHTML(data){
         const badge=document.querySelector("#cart-badge");
-        if(badge && typeof data.cart_count!=="undefined") badge.textContent=data.cart_count;
+        if(badge && typeof data.cart_count!=="undefined"){ badge.textContent=data.cart_count; }
         const offBody=document.querySelector("#cartOffcanvas .offcanvas-body");
         if(offBody && data.cart_html) offBody.innerHTML=data.cart_html;
         const oc=document.querySelector("#cartOffcanvas");
@@ -293,7 +369,6 @@
         toast.error(data.message||"Something went wrong");
       }
 
-      // Forms with class="add-to-cart-form"
       document.addEventListener("submit", function(e){
         const form=e.target.closest("form.add-to-cart-form"); if(!form) return;
         e.preventDefault();
@@ -305,7 +380,6 @@
         .catch(()=>toast.error("Network error"));
       });
 
-      // Remove & quantity
       document.addEventListener("click", function(e){
         const rm=e.target.closest(".remove-item");
         if(rm){
@@ -327,7 +401,6 @@
         }
       });
 
-      // Navbar elevation & badge pop
       (function(){ const nav=document.querySelector('.navbar'); if(!nav) return;
         const onScroll=()=>nav.classList.toggle('scrolled', window.scrollY>8);
         onScroll(); window.addEventListener('scroll', onScroll, {passive:true});

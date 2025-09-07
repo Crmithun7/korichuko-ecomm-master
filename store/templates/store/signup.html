@@ -1,14 +1,251 @@
 {% extends 'store/base.html' %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-6">
-    <h2 class="text-success">Sign Up</h2>
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button class="btn btn-success" type="submit">Register</button>
-    </form>
-    <p class="mt-3">Already have an account? <a href="{% url 'store:login' %}">Login</a></p>
+
+<style>
+  /* Match Home page ambient image (change if needed) */
+  .kc-scene{ --ambient-url: url('/media/banners/snacks-ambient.jpg'); }
+
+  /* ===== Sign-up page polish ===== */
+  .auth-wrap{ max-width: 980px; margin-inline:auto; }
+  .auth-card{
+    position:relative; border-radius:18px; border:1px solid #efdfcd;
+    background:linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.94));
+    box-shadow:0 14px 32px rgba(43,23,14,.10); backdrop-filter: blur(6px);
+    overflow:hidden; animation:rise .45s ease both;
+  }
+  .auth-card::after{
+    content:""; position:absolute; inset:-1px; pointer-events:none; border-radius:inherit;
+    background:
+      radial-gradient(240px 200px at 12% 8%, rgba(255,170,110,.16), transparent 60%),
+      radial-gradient(280px 240px at 88% 90%, rgba(255,140,160,.12), transparent 60%);
+  }
+  .auth-title{
+    display:flex; justify-content:center; align-items:center; gap:.6rem;
+    font-weight:900; letter-spacing:.2px; color:#2b170e; margin:0 0 .25rem;
+  }
+  .auth-title .grad{
+    background:linear-gradient(90deg,#ff7a00,#ffc155);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .auth-sub{ text-align:center; color:#6b7280; margin-bottom:12px }
+
+  /* Make Django {{ form.as_p }} look great without rewriting fields */
+  .auth-form p{ margin-bottom:14px }
+  .auth-form label{ font-weight:700; color:#2b170e; margin-bottom:6px; display:block }
+  .auth-form input[type="text"],
+  .auth-form input[type="email"],
+  .auth-form input[type="password"]{
+    width:100%; border-radius:12px; border:1px solid #efdfcd; padding:.68rem .9rem .68rem 2.4rem;
+    background:#fff; box-shadow: inset 0 1px 0 rgba(0,0,0,.02);
+  }
+  .auth-form input:focus{
+    outline:0; border-color:#f0c88e; box-shadow:0 0 0 .2rem rgba(255,170,110,.18), inset 0 1px 0 rgba(0,0,0,.02);
+  }
+  .auth-form .helptext{ color:#7a6b60; font-size:.9rem }
+
+  /* Icons & toggles */
+  .field-wrap{ position:relative }
+  .field-icon{
+    position:absolute; left:.65rem; top:50%; transform:translateY(-50%);
+    color:#9a7e6a; font-size:1.05rem; pointer-events:none;
+  }
+  .pw-toggle{
+    position:absolute; right:.45rem; top:50%; transform:translateY(-50%);
+    border:none; background:transparent; color:#6b7280; padding:.25rem .5rem; border-radius:10px; cursor:pointer;
+  }
+  .pw-toggle:hover{ color:#111 }
+
+  /* Strength + match badges */
+  .strength{ height:8px; border-radius:999px; background:#ffe9cc; overflow:hidden; margin-top:8px }
+  .strength > i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,#ff7a00,#ffc155); transition:width .35s ease }
+  .caps{ display:none; color:#b42318; font-weight:800; font-size:.85rem; margin-top:.35rem }
+  .caps.show{ display:inline-flex; align-items:center; gap:.35rem }
+  .match{ display:none; font-weight:800; font-size:.9rem; margin-top:.4rem }
+  .match.bad{ color:#b42318; display:block }
+  .match.good{ color:#1b7f30; display:block }
+
+  /* Snacky CTA */
+  .btn-snack{
+    --bg:linear-gradient(135deg,#ff7a00,#ffc155);
+    background:var(--bg)!important; color:#3a1d0f!important; border:none!important; border-radius:999px!important;
+    box-shadow:0 12px 28px rgba(255,138,0,.25)!important; font-weight:900!important; position:relative; overflow:hidden;
+    transition:transform .18s ease, filter .18s ease, box-shadow .18s ease;
+  }
+  .btn-snack:hover{ transform:translateY(-1px); filter:saturate(1.06); box-shadow:0 16px 34px rgba(255,138,0,.34)!important }
+  .btn-snack::before{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);
+    transform:translateX(-130%); transition:transform .65s ease;
+  }
+  .btn-snack:hover::before{ transform:translateX(130%) }
+  .btn-snack:active::after{
+    content:""; position:absolute; left:50%; top:50%; width:14px; height:14px; transform:translate(-50%,-50%);
+    background:
+      radial-gradient(#fff 2px, transparent 3px) 0 0/8px 8px,
+      radial-gradient(#ff7a00 2px, transparent 3px) 4px 4px/8px 8px,
+      radial-gradient(#ff4d6d 2px, transparent 3px) 0 4px/8px 8px,
+      radial-gradient(#ffc155 2px, transparent 3px) 4px 0/8px 8px;
+    animation:burst .6s ease forwards;
+  }
+
+  /* Overlay */
+  .processing{
+    display:none; position:fixed; inset:0; z-index:50; background:rgba(255,255,255,.85);
+    align-items:center; justify-content:center; flex-direction:column;
+  }
+  .processing .spinner{
+    width:42px; height:42px; border:3px solid rgba(0,0,0,.15); border-top-color:#2b170e; border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  .processing .msg{ margin-top:10px; color:#2b170e; font-weight:800 }
+
+  /* Tiny animations */
+  @keyframes rise{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+  @keyframes burst{ to{opacity:0; transform:translate(-50%,-70%) scale(2)} }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+</style>
+
+<div class="auth-wrap">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="auth-card p-4 p-md-5">
+        <h2 class="auth-title"><span class="grad">Create your account</span></h2>
+        <div class="auth-sub">Join Korichuko — fresh snacks, fast delivery.</div>
+
+        <form method="post" class="auth-form" id="signupForm" novalidate>
+          {% csrf_token %}
+          {{ form.as_p }}
+
+          <!-- Optional terms (remove if you already include one in Django form) -->
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="termsCheck">
+            <label class="form-check-label fw-semibold" for="termsCheck">I agree to the Terms & Privacy</label>
+          </div>
+
+          <button class="btn btn-success btn-snack w-100 mt-2" type="submit">
+            <i class="bi bi-person-plus me-1"></i> Register
+          </button>
+        </form>
+
+        <p class="mt-3 text-center">
+          Already have an account?
+          <a href="{% url 'store:login' %}" class="text-decoration-none fw-bold" style="color:#3a1d0f">Log in</a>
+        </p>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Processing overlay -->
+<div id="processingOverlay" class="processing" role="status" aria-live="polite">
+  <div class="spinner" aria-hidden="true"></div>
+  <div class="msg">Creating your account…</div>
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('signupForm');
+  const overlay = document.getElementById('processingOverlay');
+  const terms = document.getElementById('termsCheck');
+
+  // Helper: choose icon by field
+  const iconFor = (name, type) => {
+    const n = (name||'').toLowerCase();
+    if(type==='password') return 'bi-lock';
+    if(n.includes('user')) return 'bi-person';
+    if(n.includes('email')) return 'bi-envelope';
+    if(n.includes('phone')) return 'bi-telephone';
+    return 'bi-dot';
+  };
+
+  // Enhance each <p> from {{ form.as_p }}: wrap inputs, add icons, add toggles for passwords
+  const fields = [];
+  form.querySelectorAll('p').forEach(p=>{
+    const input = p.querySelector('input');
+    if(!input) return;
+    fields.push(input);
+    input.classList.add('form-control');
+
+    // wrap for icon/toggle
+    const wrap = document.createElement('div');
+    wrap.className = 'field-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    // icon
+    const ic = document.createElement('i');
+    ic.className = 'bi '+iconFor(input.name, input.type)+' field-icon';
+    wrap.appendChild(ic);
+
+    // password controls
+    if(input.type === 'password'){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pw-toggle';
+      btn.innerHTML = '<i class="bi bi-eye"></i>';
+      btn.addEventListener('click', ()=>{
+        const isPw = input.type === 'password';
+        input.type = isPw ? 'text' : 'password';
+        btn.innerHTML = isPw ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        input.focus();
+      });
+      wrap.appendChild(btn);
+    }
+  });
+
+  // Identify common password fields by name (Django defaults: password1/password2)
+  const pw1 = fields.find(f => /password1|new_password1|password/.test((f.name||'').toLowerCase()) && f.type==='password');
+  const pw2 = fields.find(f => /password2|new_password2|password_confirm|confirm/.test((f.name||'').toLowerCase()) && f.type==='password' && f!==pw1);
+
+  // Strength meter + CapsLock for pw1
+  if(pw1){
+    const strength = document.createElement('div');
+    strength.className = 'strength'; strength.innerHTML = '<i id="pwBar"></i>';
+    pw1.closest('p').appendChild(strength);
+
+    const caps = document.createElement('div');
+    caps.className = 'caps'; caps.id = 'capsNote';
+    caps.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> Caps Lock is ON';
+    pw1.closest('p').appendChild(caps);
+
+    const pwBar = strength.querySelector('#pwBar');
+
+    const score = (v)=>{
+      let s=0; if(v.length>=6) s++; if(/[a-z]/.test(v)&&/[A-Z]/.test(v)) s++; if(/\d/.test(v)) s++; if(/[^\w\s]/.test(v)) s++;
+      return Math.min(s,4);
+    };
+    const updateBar = ()=>{ const pct=[0,25,50,75,100][score(pw1.value)]; pwBar.style.width=pct+'%'; };
+    pw1.addEventListener('input', updateBar);
+    pw1.addEventListener('keyup', (e)=> caps.classList.toggle('show', e.getModifierState && e.getModifierState('CapsLock')));
+    updateBar();
+  }
+
+  // Match indicator for pw2
+  if(pw1 && pw2){
+    const match = document.createElement('div');
+    match.className='match'; match.id='matchNote';
+    pw2.closest('p').appendChild(match);
+
+    const checkMatch = ()=>{
+      if(!pw2.value){ match.className='match'; match.textContent=''; return; }
+      if(pw1.value === pw2.value){ match.className='match good'; match.textContent='Passwords match ✓'; }
+      else{ match.className='match bad'; match.textContent='Passwords do not match'; }
+    };
+    pw1.addEventListener('input', checkMatch);
+    pw2.addEventListener('input', checkMatch);
+  }
+
+  // Submit: show overlay (let server handle auth — no preventDefault)
+  form.addEventListener('submit', (e)=>{
+    // Optional simple guard for terms checkbox
+    if(terms && !terms.checked){
+      e.preventDefault();
+      alert('Please agree to the Terms & Privacy to continue.');
+      return;
+    }
+    overlay.style.display = 'flex';
+  });
+})();
+</script>
+
 {% endblock %}

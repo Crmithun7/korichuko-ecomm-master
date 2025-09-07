@@ -1,62 +1,284 @@
 {% extends 'store/base.html' %}
 {% block content %}
-<h2 class="mb-3 text-success">Razorpay Payment</h2>
-<p>Amount due: ₹{{ order.total_price|floatformat:2 }}</p>
 
-<div id="paymentProcessingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100vh;
-  background:rgba(255,255,255,0.8); z-index:1050; display:flex; justify-content:center; align-items:center; flex-direction:column;">
-  <div class="spinner-border text-success" role="status" style="width:4rem; height:4rem;">
-    <span class="visually-hidden">Processing payment.</span>
+<style>
+  :root{
+    --saffron:#B55A1B; --saffron-600:#9F4F18; --pista:#3E7F61; --gold:#D7B56D;
+    --panel:#ffffffcc; --panel-brd:#EED8C6; --ink:#2b170e; --muted:#7b6a5a;
+    --r:16px; --ease:cubic-bezier(.2,.8,.2,1);
+  }
+
+  /* Ambient like home */
+  .ambient{position:fixed; inset:0; z-index:-3;
+    background:
+      radial-gradient(1100px 700px at 12% 18%, #B55A1B22 0%, transparent 60%),
+      radial-gradient(900px 650px at 85% 12%, #3E7F611f 0%, transparent 60%),
+      linear-gradient(120deg, #fff4ea, #ffefe2 60%, #ffe8d2);
+  }
+  .blobs{position:fixed; inset:-8vmax; z-index:-2; pointer-events:none; filter:blur(20px);
+    background:
+      radial-gradient(closest-side, #ffffff2b, transparent 70%) 12% 18%/46vmax 46vmax no-repeat,
+      radial-gradient(closest-side, #B55A1B1a, transparent 70%) 80% 15%/44vmax 44vmax no-repeat,
+      radial-gradient(closest-side, #3E7F6112, transparent 70%) 70% 82%/54vmax 54vmax no-repeat;
+    animation:fog 26s ease-in-out infinite alternate;
+  }
+  @keyframes fog{from{transform:translate3d(-2vmax,-1vmax,0)} to{transform:translate3d(2vmax,1vmax,0)}}
+
+  .glass{
+    background:var(--panel); backdrop-filter:blur(12px) saturate(120%);
+    border:1px solid var(--panel-brd); border-radius:var(--r);
+    box-shadow:0 14px 28px rgba(181,90,27,.14), inset 0 1px 0 rgba(255,255,255,.55);
+  }
+  .aurora{ position:relative; overflow:hidden }
+  .aurora::after{content:""; position:absolute; inset:-1px; border-radius:inherit; padding:1px; pointer-events:none; opacity:0;
+    background:conic-gradient(from 10deg,#ffdca6,#ffe8c6,#f9e6cc,#ffdca6);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude; transition:opacity .25s ease;
+  }
+  .aurora:hover::after{opacity:1; animation:spin 9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .title{background:linear-gradient(90deg,var(--saffron),var(--pista)); -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:900; letter-spacing:.3px}
+
+  /* Order pill */
+  .pill{display:inline-flex; align-items:center; gap:.5rem; border:1px dashed #f0d8c1; background:#fffdf7; padding:.35rem .7rem; border-radius:999px; color:var(--ink); font-weight:800}
+  .pill .copy{cursor:pointer; color:var(--saffron); transition:transform .15s} .pill .copy:hover{transform:translateY(-1px)}
+
+  /* CTA + ripple */
+  .btn-success{background:var(--saffron); border-color:var(--saffron); box-shadow:0 8px 20px rgba(181,90,27,.22)}
+  .btn-success:hover{background:var(--saffron-600); border-color:var(--saffron-600)}
+  .btn-outline-success{color:var(--pista); border-color:var(--pista)} .btn-outline-success:hover{background:var(--pista); color:#fff}
+  .ripple{position:relative; overflow:hidden} .rfx{position:absolute; border-radius:50%; pointer-events:none; transform:scale(0); background:rgba(255,255,255,.35); filter:blur(2px); transition:transform .45s ease, opacity .6s ease}
+
+  /* Processing overlay */
+  #paymentProcessingOverlay{
+    display:none; position:fixed; inset:0; z-index:1050; display:flex; justify-content:center; align-items:center; flex-direction:column;
+    background:linear-gradient(120deg, rgba(255,255,255,.9), rgba(255,248,240,.92));
+    backdrop-filter: blur(6px);
+  }
+  .secure-row{display:flex; gap:.75rem; align-items:center; margin-top:.6rem; color:#7b6a5a; font-weight:700}
+  .dots{display:inline-block; width:6px; height:6px; border-radius:50%; background:#3E7F61; box-shadow:12px 0 0 #B55A1B, 24px 0 0 #D7B56D; opacity:.8}
+
+  /* Table reveal */
+  .order-table tbody tr{opacity:0; transform:translateY(6px)}
+  .order-table tbody tr.appear{opacity:1; transform:none; transition:opacity .45s var(--ease), transform .45s var(--ease)}
+
+  /* Mini toast (fallback if your base toast isn’t present) */
+  .mini-toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(8px); background:#111; color:#fff; padding:.6rem .9rem; border-radius:10px; box-shadow:0 14px 30px rgba(0,0,0,.25); opacity:0; z-index:2000; transition:.22s}
+  .mini-toast.show{transform:translateX(-50%) translateY(0); opacity:1}
+
+  .confetti{position:fixed; width:7px; height:7px; border-radius:50%; pointer-events:none; z-index:2001}
+
+  @media (prefers-reduced-motion: reduce){
+    .blobs{display:none!important}
+    .order-table tbody tr{opacity:1; transform:none!important}
+  }
+</style>
+
+<div class="ambient"></div>
+<div class="blobs"></div>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-xl-8">
+      <div class="glass aurora p-4 p-md-5">
+        <div class="text-center mb-3">
+          <h2 class="title mb-1">Razorpay Payment</h2>
+          <div class="pill mt-2">
+            <i class="bi bi-receipt"></i>
+            Order #<b id="orderId">{{ order.id }}</b>
+            <i class="bi bi-clipboard-check copy" id="copyId" title="Copy"></i>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
+          <h5 class="mb-0">Amount due:</h5>
+          <h5 class="mb-0 text-success fw-bold">₹{{ order.total_price|floatformat:2 }}</h5>
+        </div>
+
+        <div class="text-center mb-4">
+          <button id="payNowBtn" type="button" class="btn btn-success ripple px-4">
+            <i class="bi bi-shield-lock me-1"></i> Pay Now
+          </button>
+          <div class="small text-muted mt-2">Secure payment by Razorpay • UPI • Cards • Netbanking</div>
+        </div>
+
+        {% if order.items.all %}
+        <div class="table-responsive">
+          <table class="table order-table align-middle mb-0">
+            <thead class="border-bottom">
+              <tr>
+                <th style="width:72px;">Image</th>
+                <th>Product</th>
+                <th class="text-end">Qty</th>
+                <th class="text-end">Unit Price</th>
+                <th class="text-end">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for it in order.items.all %}
+                {% with unit=it.product.display_price %}
+                <tr>
+                  <td>
+                    {% if it.product.image %}
+                      <img src="{{ it.product.image.url }}" alt="{{ it.product.name }}" class="rounded" style="width:56px;height:56px;object-fit:cover;">
+                    {% else %}
+                      <div class="bg-light border rounded d-flex align-items-center justify-content-center text-muted" style="width:56px;height:56px;font-size:10px;">No image</div>
+                    {% endif %}
+                  </td>
+                  <td class="text-start">{{ it.product.name }}</td>
+                  <td class="text-end">{{ it.quantity }}</td>
+                  <td class="text-end">₹ {{ unit|floatformat:2 }}</td>
+                  <td class="text-end">₹ {{ it.get_total_price|floatformat:2 }}</td>
+                </tr>
+                {% endwith %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+    </div>
   </div>
-  <div class="mt-3 fw-semibold text-success">Processing your payment.</div>
 </div>
 
-<form id="razorpayForm" action="{{ callback_url }}" method="POST">
-  {% csrf_token %}
-  <script
-    src="https://checkout.razorpay.com/v1/checkout.js"
-    data-key="{{ razorpay_merchant_key }}"
-    data-amount="{{ razorpay_amount }}"
-    data-currency="INR"
-    data-order_id="{{ razorpay_order_id }}"
-    data-buttontext="Pay Now"
-    data-name="Korichuko"
-    data-description="Purchase"
-    data-theme.color="#388e3c"
-  ></script>
+<!-- Processing Overlay -->
+<div id="paymentProcessingOverlay" aria-live="polite" aria-busy="true">
+  <div class="spinner-border text-success" role="status" style="width:3.5rem;height:3.5rem">
+    <span class="visually-hidden">Processing payment</span>
+  </div>
+  <div class="mt-3 fw-semibold text-success">Processing your payment…</div>
+  <div class="secure-row">
+    <span class="dots"></span>
+    <span class="small">Do not refresh or close this window</span>
+  </div>
+</div>
 
+<!-- Razorpay auto-button is hidden; we control the popup -->
+<form id="razorpayForm" action="{{ callback_url }}" method="POST" class="d-none">
+  {% csrf_token %}
+  <script src="https://checkout.razorpay.com/v1/checkout.js"
+          data-key="{{ razorpay_merchant_key }}"
+          data-amount="{{ razorpay_amount }}"
+          data-currency="INR"
+          data-order_id="{{ razorpay_order_id }}"
+          data-buttontext="Pay Now"
+          data-name="Korichuko"
+          data-description="Purchase"
+          data-theme.color="#B55A1B"></script>
   <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
   <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
   <input type="hidden" name="razorpay_signature" id="razorpay_signature">
 </form>
 
 <script>
-window.onload = function() {
-  const razorpayButton = document.querySelector('button.razorpay-payment-button');
-  if (razorpayButton) razorpayButton.style.display = 'none';
+(function(){
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  var options = {
-    "key": "{{ razorpay_merchant_key }}",
-    "amount": "{{ razorpay_amount }}",
-    "currency": "INR",
-    "name": "Korichuko",
-    "description": "Purchase",
-    "order_id": "{{ razorpay_order_id }}",
-    "handler": function (response){
-      document.getElementById('paymentProcessingOverlay').style.display = 'flex';
-      document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
-      document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
-      document.getElementById('razorpay_signature').value = response.razorpay_signature;
-      document.getElementById('razorpayForm').submit();
-    },
-    "modal": {
-      "ondismiss": function(){
-        document.getElementById('paymentProcessingOverlay').style.display = 'none';
-      }
+  // Stagger table rows
+  document.querySelectorAll('.order-table tbody tr').forEach((tr,i)=> setTimeout(()=> tr.classList.add('appear'), 70*i+120));
+
+  // Copy order id
+  const copyBtn=document.getElementById('copyId'), oid=document.getElementById('orderId');
+  function toast(message){
+    if(window.showToast){ window.showToast(message,'success'); return; }
+    const t=document.createElement('div'); t.className='mini-toast'; t.textContent=message; document.body.appendChild(t);
+    requestAnimationFrame(()=>t.classList.add('show')); setTimeout(()=>t.classList.remove('show'),1700); setTimeout(()=>t.remove(),2100);
+  }
+  copyBtn?.addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(oid?.textContent?.trim()||''); toast('Order ID copied'); }catch(_){ toast('Unable to copy'); } });
+
+  // Ripple
+  document.addEventListener('click', (e)=>{
+    const b=e.target.closest('.ripple'); if(!b) return;
+    const r=document.createElement('span'); r.className='rfx';
+    const rect=b.getBoundingClientRect(), size=Math.max(rect.width,rect.height);
+    Object.assign(r.style,{width:size+'px',height:size+'px',left:(e.clientX-rect.left-size/2)+'px',top:(e.clientY-rect.top-size/2)+'px'});
+    b.appendChild(r); requestAnimationFrame(()=>{ r.style.transform='scale(1.6)'; r.style.opacity='0'; }); setTimeout(()=>r.remove(),650);
+  }, {passive:true});
+
+  // Confetti
+  function confettiBurst(x,y){
+    if(reduce) return;
+    const colors=['#ff7a00','#ffc155','#ff4d6d','#3E7F61','#D7B56D','#fff'];
+    for(let i=0;i<16;i++){
+      const p=document.createElement('i'); p.className='confetti';
+      p.style.left=x+'px'; p.style.top=y+'px'; p.style.background=colors[i%colors.length];
+      document.body.appendChild(p);
+      const dx=(Math.random()-0.5)*220, dy=-(90+Math.random()*140), rot=(Math.random()*360)+'deg';
+      p.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:`translate(${dx}px, ${dy}px) rotate(${rot})`,opacity:0}],
+        {duration:900+Math.random()*550, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards'}).onfinish=()=>p.remove();
     }
-  };
-  var rzp1 = new Razorpay(options);
-  rzp1.open();
-};
+  }
+
+  // Razorpay setup
+  const overlay=document.getElementById('paymentProcessingOverlay');
+  const form=document.getElementById('razorpayForm');
+  const payBtn=document.getElementById('payNowBtn');
+
+  function openCheckout(){
+    const options = {
+      key: "{{ razorpay_merchant_key }}",
+      amount: "{{ razorpay_amount }}",
+      currency: "INR",
+      name: "Korichuko",
+      description: "Purchase",
+      order_id: "{{ razorpay_order_id }}",
+      theme: { color: "#B55A1B" },
+      prefill: {
+        name: "{{ user.get_full_name|default:user.username|default:'' }}",
+        email: "{{ user.email|default:'' }}",
+        contact: "{{ order.phone|default:'' }}"
+      },
+      notes: { order_id: "{{ order.id }}" },
+      handler: function (response){
+        // Success → show overlay quickly + confetti, then submit
+        overlay.style.display='flex';
+        const r = payBtn.getBoundingClientRect();
+        confettiBurst(r.left + r.width/2, r.top + window.scrollY);
+        document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+        document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+        document.getElementById('razorpay_signature').value = response.razorpay_signature;
+        setTimeout(()=> form.submit(), 120); // tiny delay allows overlay paint
+      },
+      modal: {
+        ondismiss: function(){
+          overlay.style.display='none';
+          // Show the Pay button if user closed popup
+          payBtn?.classList.remove('disabled');
+        }
+      }
+    };
+    const rzp = new Razorpay(options);
+
+    // Failure event (e.g., auth declined)
+    rzp.on('payment.failed', function (resp){
+      overlay.style.display='none';
+      const msg = resp?.error?.description || 'Payment failed. Please try again.';
+      if(window.showToast) window.showToast(msg,'danger');
+      else toast(msg);
+      payBtn?.classList.remove('disabled');
+    });
+
+    try{
+      payBtn?.classList.add('disabled');
+      rzp.open();
+    }catch(_){
+      payBtn?.classList.remove('disabled');
+      // If popup blocked, user can click Pay Now
+    }
+  }
+
+  // Hide Razorpay auto button if present
+  window.addEventListener('load', ()=> {
+    const autoBtn = document.querySelector('button.razorpay-payment-button');
+    if(autoBtn) autoBtn.style.display='none';
+    // Auto-open once (nice UX)
+    openCheckout();
+  });
+
+  payBtn?.addEventListener('click', openCheckout);
+
+})();
 </script>
+
 {% endblock %}

@@ -1,56 +1,220 @@
 {% extends 'store/base.html' %}
 {% block content %}
-<div class="text-center">
-  <h2 class="text-success">Order Successful!</h2>
-  <h2 class="mb-3 text-success">Thank you! Your order is placed.</h2>
-<p class="text-muted">Order #{{ order.id }}</p>
 
-{% if order.items.all %}
-<div class="card shadow-sm border-0 rounded-4 p-5 w-50 mx-auto">
-  <div class="table-responsive">
-    <table class="table align-middle mb-0">
-      <thead>
-        <tr>
-          <th style="width:72px;">Image</th>
-          <th>Product</th>
-          <th class="text-end">Qty</th>
-          <th class="text-end">Unit Price</th>
-          <th class="text-end">Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for it in order.items.all %}
-          {% with unit=it.product.display_price %}
-          <tr>
-            <td>
-              {% if it.product.image %}
-                <img src="{{ it.product.image.url }}" alt="{{ it.product.name }}"
-                     class="rounded" style="width:56px;height:56px;object-fit:cover;">
-              {% else %}
-                <div class="bg-light border rounded d-flex align-items-center justify-content-center text-muted"
-                     style="width:56px;height:56px;font-size:10px;">
-                  No image
-                </div>
-              {% endif %}
-            </td>
-            <td>{{ it.product.name }}</td>
-            <td class="text-end">{{ it.quantity }}</td>
-            <td class="text-end">₹ {{ unit|floatformat:2 }}</td>
-            <td class="text-end">₹ {{ it.get_total_price|floatformat:2 }}</td>
-          </tr>
-          {% endwith %}
-        {% endfor %}
-        <tr>
-          <td colspan="4" class="text-end fw-bold">Total</td>
-          <td class="text-end fw-bold">₹ {{ order.total_price|floatformat:2 }}</td>
-        </tr>
-      </tbody>
-    </table>
+<style>
+  :root{
+    --saffron:#B55A1B; --saffron-600:#9F4F18; --pista:#3E7F61; --gold:#D7B56D;
+    --ivory:#FFF4EA; --ink:#2b170e; --muted:#7b6a5a; --panel:#ffffffcc; --panel-brd:#EED8C6;
+    --r:16px; --ease:cubic-bezier(.2,.8,.2,1);
+  }
+
+  /* Ambient backdrop (soft like home) */
+  .cele-ambient{position:fixed; inset:0; z-index:-3;
+    background:
+      radial-gradient(1100px 700px at 12% 18%, #B55A1B22 0%, transparent 60%),
+      radial-gradient(900px 650px at 85% 12%, #3E7F611f 0%, transparent 60%),
+      linear-gradient(120deg, #fff4ea, #ffefe2 60%, #ffe8d2);
+  }
+  .cele-blobs{position:fixed; inset:-8vmax; z-index:-2; pointer-events:none; filter:blur(20px);
+    background:
+      radial-gradient(closest-side, #ffffff2b, transparent 70%) 12% 18%/46vmax 46vmax no-repeat,
+      radial-gradient(closest-side, #B55A1B1a, transparent 70%) 80% 15%/44vmax 44vmax no-repeat,
+      radial-gradient(closest-side, #3E7F6112, transparent 70%) 70% 82%/54vmax 54vmax no-repeat;
+    animation:cele-fog 26s ease-in-out infinite alternate;
+  }
+  @keyframes cele-fog{from{transform:translate3d(-2vmax,-1vmax,0)} to{transform:translate3d(2vmax,1vmax,0)}}
+
+  /* Glass card */
+  .glass{
+    background:var(--panel); backdrop-filter:blur(12px) saturate(120%);
+    border:1px solid var(--panel-brd); border-radius:var(--r); box-shadow:0 14px 28px rgba(181,90,27,.14), inset 0 1px 0 rgba(255,255,255,.55);
+  }
+  .aurora::after{content:""; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; opacity:0; padding:1px;
+    background:conic-gradient(from 10deg,#ffdca6,#ffe8c6,#f9e6cc,#ffdca6);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude; transition:opacity .25s ease;
+  }
+  .aurora:hover::after{opacity:1; animation:spin 9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Title & tick */
+  .cele-title{background:linear-gradient(90deg,var(--saffron),var(--pista)); -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:900; letter-spacing:.3px}
+  .tick-wrap{width:84px;height:84px;margin-inline:auto; border-radius:999px; display:grid; place-items:center;
+    background:radial-gradient(circle at 30% 30%, #ffffff, #fff3e4); box-shadow:0 12px 26px rgba(181,90,27,.25);
+    transform:scale(.9); animation:pop .4s var(--ease) .15s both;
+  }
+  @keyframes pop{from{transform:scale(.6); opacity:0} to{transform:scale(1); opacity:1}}
+  .tick{width:44px;height:44px}
+  .tick circle,.tick path{fill:none; stroke-linecap:round; stroke-linejoin:round}
+  .tick circle{stroke:#D7B56D; stroke-width:6; stroke-dasharray: 276; stroke-dashoffset:276; animation:draw 1s ease .2s forwards}
+  .tick path{stroke:var(--pista); stroke-width:6; stroke-dasharray: 70; stroke-dashoffset:70; animation:draw .8s ease .6s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+
+  /* Order id pill */
+  .order-pill{display:inline-flex; align-items:center; gap:.5rem; border:1px dashed #f0d8c1; background:#fffdf7; padding:.35rem .7rem; border-radius:999px; color:var(--ink); font-weight:800}
+  .order-pill .copy{cursor:pointer; color:var(--saffron); transition:transform .15s; }
+  .order-pill .copy:hover{transform:translateY(-1px)}
+
+  /* Table polish + row stagger */
+  .order-card{max-width: 980px}
+  .order-table tbody tr{opacity:0; transform:translateY(6px)}
+  .order-table tbody tr.appear{opacity:1; transform:none; transition:opacity .45s var(--ease), transform .45s var(--ease)}
+  .order-table img{transition: transform .25s var(--ease)} .order-table tr:hover img{transform:scale(1.04)}
+
+  /* Buttons */
+  .btn-success{background:var(--saffron); border-color:var(--saffron); box-shadow:0 8px 20px rgba(181,90,27,.22)}
+  .btn-success:hover{background:var(--saffron-600); border-color:var(--saffron-600)}
+  .btn-outline-success{color:var(--pista); border-color:var(--pista)} .btn-outline-success:hover{background:var(--pista); color:#fff}
+  .ripple{position:relative; overflow:hidden} .rfx{position:absolute; border-radius:50%; pointer-events:none; transform:scale(0); background:rgba(255,255,255,.35); filter:blur(2px); transition: transform .45s ease, opacity .6s ease}
+
+  /* Mini toast (fallback if your base toast isn’t present) */
+  .mini-toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(8px); background:#111; color:#fff; padding:.6rem .9rem; border-radius:10px; box-shadow:0 14px 30px rgba(0,0,0,.25); opacity:0; z-index:50; transition:.22s}
+  .mini-toast.show{transform:translateX(-50%) translateY(0); opacity:1}
+
+  /* Confetti pieces */
+  .confetti{position:fixed; width:7px; height:7px; border-radius:50%; pointer-events:none; z-index:60}
+
+  @media (prefers-reduced-motion: reduce){
+    .cele-blobs{display:none!important}
+    .order-table tbody tr{opacity:1; transform:none!important}
+  }
+</style>
+
+<div class="cele-ambient"></div>
+<div class="cele-blobs"></div>
+
+<div class="container py-5 text-center">
+  <!-- Header -->
+  <div class="mb-3">
+    <div class="tick-wrap mb-3">
+      <!-- Animated check -->
+      <svg class="tick" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="44"></circle>
+        <path d="M28 54 L45 70 L74 38"></path>
+      </svg>
+    </div>
+    <h2 class="cele-title">Order Successful!</h2>
+    <h5 class="cele-title" style="font-weight:800; background:linear-gradient(90deg,var(--gold),var(--saffron)); -webkit-background-clip:text; color:transparent;">
+      Thank you! Your order is placed.
+    </h5>
+
+    <div class="mt-2">
+      <span class="order-pill">
+        <i class="bi bi-receipt"></i>
+        Order #<b id="orderId">{{ order.id }}</b>
+        <i class="bi bi-clipboard-check copy" id="copyId" title="Copy"></i>
+      </span>
+    </div>
+
+    <div class="mt-3 d-flex justify-content-center gap-2">
+      <a href="{% url 'store:shop' %}" class="btn btn-success ripple"><i class="bi bi-bag-check me-1"></i> Continue Shopping</a>
+      <a href="javascript:window.print()" class="btn btn-outline-success ripple"><i class="bi bi-printer me-1"></i> Print Receipt</a>
+    </div>
   </div>
-</div>
-{% else %}
-<p>No items found for this order.</p>
-{% endif %}
 
+  <!-- Order Items -->
+  {% if order.items.all %}
+  <div class="card glass aurora shadow-sm border-0 rounded-4 p-4 p-md-5 w-100 mx-auto order-card position-relative">
+    <div class="table-responsive">
+      <table class="table order-table align-middle mb-0">
+        <thead class="border-bottom">
+          <tr>
+            <th style="width:72px;">Image</th>
+            <th>Product</th>
+            <th class="text-end">Qty</th>
+            <th class="text-end">Unit Price</th>
+            <th class="text-end">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in order.items.all %}
+            {% with unit=it.product.display_price %}
+            <tr>
+              <td>
+                {% if it.product.image %}
+                  <img src="{{ it.product.image.url }}" alt="{{ it.product.name }}" class="rounded" style="width:56px;height:56px;object-fit:cover;">
+                {% else %}
+                  <div class="bg-light border rounded d-flex align-items-center justify-content-center text-muted"
+                       style="width:56px;height:56px;font-size:10px;">No image</div>
+                {% endif %}
+              </td>
+              <td class="text-start">{{ it.product.name }}</td>
+              <td class="text-end">{{ it.quantity }}</td>
+              <td class="text-end">₹ {{ unit|floatformat:2 }}</td>
+              <td class="text-end">₹ {{ it.get_total_price|floatformat:2 }}</td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+          <tr class="border-top">
+            <td colspan="4" class="text-end fw-bold">Total</td>
+            <td class="text-end fw-bold">₹ {{ order.total_price|floatformat:2 }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+    <p class="text-muted">No items found for this order.</p>
+  {% endif %}
 </div>
+
+<script>
+(function(){
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Stagger rows
+  const rows = document.querySelectorAll('.order-table tbody tr');
+  rows.forEach((tr,i)=> setTimeout(()=> tr.classList.add('appear'), 80*i + 120));
+
+  // Confetti burst (centered near title)
+  function confettiBurst(x,y){
+    if(reduce) return;
+    const colors=['#ff7a00','#ffc155','#ff4d6d','#3E7F61','#D7B56D','#fff'];
+    for(let i=0;i<18;i++){
+      const p=document.createElement('i');
+      p.className='confetti';
+      p.style.left=x+'px'; p.style.top=y+'px'; p.style.background=colors[i%colors.length];
+      document.body.appendChild(p);
+      const dx=(Math.random()-0.5)*220, dy=-(90+Math.random()*140), rot=(Math.random()*360)+'deg';
+      p.animate([{transform:'translate(0,0) rotate(0)',opacity:1},
+                 {transform:`translate(${dx}px, ${dy}px) rotate(${rot})`,opacity:0}],
+                 {duration:900+Math.random()*550, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards'})
+       .onfinish=()=>p.remove();
+    }
+  }
+  const title = document.querySelector('.cele-title');
+  if(title){
+    const r=title.getBoundingClientRect();
+    confettiBurst(r.left + r.width/2, r.top + window.scrollY);
+  }
+
+  // Ripple on buttons
+  document.addEventListener('click', (e)=>{
+    const b=e.target.closest('.ripple'); if(!b) return;
+    const r=document.createElement('span'); r.className='rfx';
+    const rect=b.getBoundingClientRect(), size=Math.max(rect.width,rect.height);
+    Object.assign(r.style,{width:size+'px',height:size+'px',
+      left:(e.clientX-rect.left-size/2)+'px', top:(e.clientY-rect.top-size/2)+'px'});
+    b.appendChild(r);
+    requestAnimationFrame(()=>{ r.style.transform='scale(1.6)'; r.style.opacity='0'; });
+    setTimeout(()=>r.remove(), 650);
+  }, {passive:true});
+
+  // Copy order id
+  const copyBtn = document.getElementById('copyId');
+  const oid = document.getElementById('orderId');
+  function toast(msg){
+    if(window.showToast){ window.showToast(msg,'success'); return; }
+    const t=document.createElement('div'); t.className='mini-toast'; t.textContent=msg; document.body.appendChild(t);
+    requestAnimationFrame(()=>t.classList.add('show')); setTimeout(()=>t.classList.remove('show'),1700); setTimeout(()=>t.remove(),2100);
+  }
+  if(copyBtn && oid){
+    copyBtn.addEventListener('click', async ()=>{
+      try{ await navigator.clipboard.writeText(oid.textContent.trim()); toast('Order ID copied'); }
+      catch(_){ toast('Unable to copy'); }
+    });
+  }
+})();
+</script>
+
 {% endblock %}

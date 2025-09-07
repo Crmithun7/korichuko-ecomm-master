@@ -1,58 +1,264 @@
 {% extends 'store/base.html' %}
 {% block content %}
-<h2 class="mb-4 fw-bold text-success">Checkout</h2>
+<style>
+/* === Checkout scene styled like HOME === */
+:root{
+  /* Ambient image from HOME (change if your home page uses a different one) */
+  --ambient-url: url('/media/banners/ambient-upload.jpg');
 
-{% if order.items.all %}
-<ul class="list-group mb-3">
-  {% for item in order.items.all %}
-  <li class="list-group-item d-flex justify-content-between">
-    <span>{{ item.product.name }} (x{{ item.quantity }})</span>
-    <strong>₹{{ item.get_total_price|floatformat:2 }}</strong>
-  </li>
-  {% endfor %}
-  <li class="list-group-item d-flex justify-content-between bg-light">
-    <strong>Total:</strong>
-    <strong>₹{{ order.total_price|floatformat:2 }}</strong>
-  </li>
-</ul>
+  /* Palette harmonized with home */
+  --scene-cream:#fff7ef; 
+  --scene-peach:#ffe3c3;
+  --scene-blush:#ffd6ca;
+  --scene-tint:#eefcf4;
 
-<form id="checkoutForm" method="post">
-  {% csrf_token %}
-  <label class="me-3">
-    <input type="radio" name="payment_method" value="cod" checked>
-    Cash on Delivery
-  </label>
-  <label>
-    <input type="radio" name="payment_method" value="razorpay">
-    Razorpay
-  </label>
-  <br>
-  <button type="submit" class="btn btn-success mt-3">Place Order</button>
-</form>
+  --green:#16a34a; --green-2:#22c55e;
+  --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --card:#ffffff;
+  --r-lg:18px; --r-md:14px; --r-sm:10px;
+  --sh1:0 8px 24px rgba(0,0,0,.06);
+  --sh2:0 18px 48px rgba(0,0,0,.12);
+}
 
-<!-- Loader Overlay for smoother UX -->
-<div id="processingOverlay" style="
-  display:none; position:fixed; top:0; left:0; width:100%; height:100vh;
-  background:rgba(255,255,255,0.85); z-index:2000;
-  flex-direction:column; justify-content:center; align-items:center;">
-  <div class="spinner-border text-success" style="width:4rem; height:4rem;" role="status">
-    <span class="visually-hidden">Processing.</span>
+/* Scene background (matches home’s ambient layers) */
+.checkout-scene{
+  position:relative; border-radius:20px; overflow:hidden;
+  background:
+    radial-gradient(120% 120% at 10% 0%, var(--scene-peach) 0%, var(--scene-cream) 45%, #fff 100%),
+    linear-gradient(120deg, var(--scene-cream), var(--scene-peach), var(--scene-blush), var(--scene-tint));
+  background-size:120% 120%, 200% 200%;
+  animation:sceneShift 18s ease-in-out infinite;
+}
+/* Ambient image layer with gentle parallax */
+.checkout-scene::before{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background-image: var(--ambient-url, url('/media/banners/home-banner.png'));
+  background-size:cover; background-position:center;
+  opacity:.18; mix-blend-mode:multiply;
+  filter:saturate(1.06) contrast(1.03) brightness(1.05);
+  transform:scale(1.08);
+  animation:slowPan 42s ease-in-out infinite alternate;
+}
+/* Conic highlight glow like home */
+.checkout-scene::after{
+  content:""; position:absolute; inset:-25% -15%; z-index:1; pointer-events:none;
+  background:
+    conic-gradient(from 180deg at 70% 20%, rgba(255,255,255,.25), transparent 25% 50%, rgba(255,255,255,.18) 75%, transparent 100%),
+    radial-gradient(220px 180px at 15% 10%, rgba(255,170,110,.16), transparent 60%),
+    radial-gradient(260px 220px at 85% 85%, rgba(255,140,160,.14), transparent 60%);
+  animation:glowFloat 24s ease-in-out infinite;
+}
+/* Grain overlay (separate element) */
+.scene-grain{ position:absolute; inset:0; z-index:2; pointer-events:none; opacity:.28; mix-blend-mode:soft-light;
+  background-image:radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px);
+  background-size:6px 6px; animation:grainShift 8s steps(2,end) infinite;
+}
+@keyframes sceneShift{0%,100%{background-position:0% 50%,0% 50%}50%{background-position:100% 50%,100% 50%}}
+@keyframes slowPan{0%{transform:scale(1.08) translateX(0)}100%{transform:scale(1.1) translateX(-1.4%)}}
+@keyframes glowFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes grainShift{0%,100%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}50%{transform:translate(-1px,1px)}75%{transform:translate(1px,1px)}}
+
+/* Layout + cards from your previous version (unchanged) */
+.checkout-wrap{ padding:18px }
+@media (min-width: 992px){ .checkout-wrap{ padding:26px 28px } }
+.card-clean{ background:var(--card); border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--sh1) }
+.card-clean:hover{ box-shadow:var(--sh2) }
+.card-head{ padding:16px 18px; border-bottom:1px solid var(--line) }
+.card-body{ padding:16px 18px }
+
+/* Stepper */
+.stepper{display:flex; align-items:center; gap:14px; list-style:none; padding:0; margin:0 0 18px 0}
+.stepper li{display:flex; align-items:center; gap:10px; color:var(--muted); font-weight:600}
+.stepper .dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid var(--line);color:var(--muted);font-size:.9rem;font-weight:700}
+.stepper li.active .dot{ border-color:#16a34a; color:#16a34a }
+.stepper li.done  .dot{ background:#16a34a; border-color:#16a34a; color:#fff }
+.stepper li + li::before{content:""; width:44px; height:4px; border-radius:999px; background:#eaeaea; display:block}
+.stepper li.done + li::before{ background:linear-gradient(90deg,#16a34a,#22c55e) }
+
+/* Items rise-in */
+.li-rise{ animation:rise .5s ease both } .li-rise:nth-child(1){animation-delay:.02s} .li-rise:nth-child(2){animation-delay:.05s} .li-rise:nth-child(3){animation-delay:.08s}
+@keyframes rise{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+
+/* Payment cards */
+.pay-grid{ display:grid; grid-template-columns:1fr; gap:12px }
+@media (min-width:576px){ .pay-grid{ grid-template-columns:repeat(2,1fr) } }
+.pay-card{position:relative;border:1px solid var(--line);border-radius:14px;padding:14px 14px 14px 48px;cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;background:#fff}
+.pay-card:hover{ transform:translateY(-2px); box-shadow:var(--sh1) }
+.pay-card input{ position:absolute; left:14px; top:16px; width:20px; height:20px; cursor:pointer }
+.pay-card .title{ font-weight:800; color:var(--ink) }
+.pay-card .sub{ color:var(--muted); font-size:.9rem }
+.pay-card:has(input:checked){ border-color:#16a34a; box-shadow:0 0 0 4px rgba(34,197,94,.15) }
+.pay-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;margin-right:10px}
+
+/* Button */
+.btn-green{
+  --bg1:#16a34a; --bg2:#22c55e;
+  display:inline-flex; align-items:center; gap:8px;
+  background:linear-gradient(135deg, var(--bg1), var(--bg2));
+  color:#fff; border:none; border-radius:999px; padding:10px 16px; font-weight:800; letter-spacing:.2px;
+  box-shadow:0 10px 26px rgba(22,163,74,.25); transition:transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+.btn-green:hover{ transform:translateY(-1px); filter:saturate(1.06); box-shadow:0 12px 30px rgba(22,163,74,.33) }
+.btn-green:active{ transform:translateY(0) }
+.btn-green::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-130%);transition:transform .6s ease}
+.btn-green:hover::after{ transform:translateX(130%) }
+
+/* Overlay loader */
+#processingOverlay{ display:none; position:fixed; inset:0; background:rgba(255,255,255,.88); z-index:2000; backdrop-filter:blur(4px) }
+.loader-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; height:100% }
+.loading-dots{ display:inline-block; min-width:1ch }
+.loading-dots::after{ content:""; animation:dots 1.2s steps(4,end) infinite }
+@keyframes dots{ 0%{content:""} 25%{content:"."} 50%{content:".."} 75%{content:"..."} 100%{content:""} }
+
+/* Total counter */
+#animatedTotal{ font-variant-numeric:tabular-nums }
+
+/* Misc */
+.muted{ color:var(--muted) } .badge-chip{border:1px solid var(--line);color:var(--muted);background:#fff;border-radius:999px;padding:6px 10px;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+.badges{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px }
+</style>
+
+<div class="checkout-scene my-3 my-md-4">
+  <!-- grain overlay like HOME -->
+  <div class="scene-grain"></div>
+
+  <div class="checkout-wrap container">
+    <!-- Stepper -->
+    <ul class="stepper">
+      <li class="done"><span class="dot">1</span><span>Cart</span></li>
+      <li class="done"><span class="dot">2</span><span>Address</span></li>
+      <li class="active"><span class="dot">3</span><span>Payment</span></li>
+      <li><span class="dot">4</span><span>Review</span></li>
+    </ul>
+
+    {% if order.items.all %}
+    <div class="row g-3 g-lg-4">
+      <!-- Payment -->
+      <div class="col-lg-7">
+        <div class="card-clean">
+          <div class="card-head d-flex align-items-center justify-content-between">
+            <div class="fw-bold">Choose Payment</div>
+            <div class="muted small">Secure & encrypted</div>
+          </div>
+          <div class="card-body">
+            <form id="checkoutForm" method="post">
+              {% csrf_token %}
+              <div class="pay-grid mb-2">
+                <label class="pay-card">
+                  <input type="radio" name="payment_method" value="cod" checked>
+                  <div class="d-flex align-items-start">
+                    <div class="pay-icon"><i class="bi bi-cash-stack"></i></div>
+                    <div>
+                      <div class="title">Cash on Delivery</div>
+                      <div class="sub">Pay with cash when your order arrives</div>
+                    </div>
+                  </div>
+                </label>
+
+                <label class="pay-card">
+                  <input type="radio" name="payment_method" value="razorpay">
+                  <div class="d-flex align-items-start">
+                    <div class="pay-icon" style="background:linear-gradient(135deg,#111827,#1f2937)"><i class="bi bi-credit-card-2-front"></i></div>
+                    <div>
+                      <div class="title">Razorpay</div>
+                      <div class="sub">UPI / Cards / NetBanking via Razorpay</div>
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              <div class="badges">
+                <span class="badge-chip"><i class="bi bi-shield-lock"></i> SSL Secured</span>
+                <span class="badge-chip"><i class="bi bi-truck"></i> Fast Delivery</span>
+                <span class="badge-chip"><i class="bi bi-arrow-repeat"></i> Easy Returns</span>
+              </div>
+
+              <button type="submit" class="btn-green position-relative mt-3">
+                <i class="bi bi-check2-circle"></i> Place Order
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="col-lg-5">
+        <div class="card-clean" style="position:sticky; top:18px">
+          <div class="card-head fw-bold">Order Summary</div>
+          <div class="card-body">
+            <ul class="list-group mb-3">
+              {% for item in order.items.all %}
+              <li class="list-group-item d-flex justify-content-between li-rise">
+                <span class="text-truncate">{{ item.product.name }} <span class="muted">(x{{ item.quantity }})</span></span>
+                <strong>₹{{ item.get_total_price|floatformat:2 }}</strong>
+              </li>
+              {% endfor %}
+              <li class="list-group-item d-flex justify-content-between bg-light">
+                <strong>Total:</strong>
+                <strong id="animatedTotal" data-total="{{ order.total_price|floatformat:2 }}">₹{{ order.total_price|floatformat:2 }}</strong>
+              </li>
+            </ul>
+            <div class="small muted">By placing the order you agree to our Terms & Refund Policy.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay Loader -->
+    <div id="processingOverlay">
+      <div class="loader-wrap">
+        <div class="spinner-border text-success" style="width:4rem;height:4rem" role="status">
+          <span class="visually-hidden">Processing</span>
+        </div>
+        <div class="mt-3 fw-semibold text-success fs-5">Processing your order<span class="loading-dots"></span></div>
+        <div class="small muted mt-1">Please don’t refresh this page</div>
+      </div>
+    </div>
+
+    {% else %}
+      <div class="card-clean"><div class="card-body"><p class="mb-0">No items in checkout.</p></div></div>
+    {% endif %}
   </div>
-  <div class="mt-3 fw-semibold text-success fs-5">Processing your order.</div>
 </div>
 
 <script>
-document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-  var paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
-  document.getElementById('processingOverlay').style.display = 'flex';
-  if (paymentMethod === 'cod') {
-    e.preventDefault();
-    setTimeout(() => this.submit(), 800);
+/* Total counter */
+(function(){
+  const el = document.getElementById('animatedTotal');
+  if(!el) return;
+  const full = parseFloat((el.dataset.total || "0").replace(/[,₹\s]/g,''));
+  if(isNaN(full)) return;
+  const dur = 800, start = performance.now();
+  function tick(t){
+    const p = Math.min(1, (t - start)/dur);
+    const val = (full * (0.25 + 0.75 * p));
+    el.textContent = '₹' + val.toFixed(2);
+    if(p<1) requestAnimationFrame(tick); else el.textContent = '₹' + full.toFixed(2);
   }
-});
-</script>
+  requestAnimationFrame(tick);
+})();
 
-{% else %}
-<p>No items in checkout.</p>
-{% endif %}
+/* Submit + overlay + COD delay (unchanged) */
+(function(){
+  const form = document.getElementById('checkoutForm');
+  const overlay = document.getElementById('processingOverlay');
+  if(!form) return;
+
+  form.addEventListener('submit', function(e){
+    const method = form.querySelector('input[name="payment_method"]:checked')?.value || 'cod';
+    overlay.style.display = 'block';
+    if(method === 'cod'){
+      e.preventDefault();
+      setTimeout(()=> form.submit(), 800);
+    }
+  });
+
+  // Make whole payment cards clickable
+  document.querySelectorAll('.pay-card').forEach(card=>{
+    card.addEventListener('click', (ev)=>{
+      const input = card.querySelector('input[type="radio"]');
+      if(ev.target !== input){ input.checked = true; input.dispatchEvent(new Event('change'));}
+    });
+  });
+})();
+</script>
 {% endblock %}

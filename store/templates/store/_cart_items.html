@@ -1,22 +1,116 @@
 {% if order and order.items.all %}
+<style>
+  /* ===== Mini Cart — Snack theme (scoped) ===== */
+  .kc-mini-cart{
+    --snack:#ff7a00; --snack-2:#ffc155; --berry:#ff4d6d;
+    --cocoa:#2b170e; --ink:#3a1d0f; --line:#efdfcd;
+    --r:14px; --sh1:0 8px 24px rgba(43,23,14,.08);
+  }
+  .kc-mini-cart .mc-row{
+    display:flex; align-items:center; gap:12px; padding:10px;
+    border:1px solid var(--line); border-radius:16px; background:#fff; box-shadow:var(--sh1);
+    transition: transform .12s ease, box-shadow .18s ease, border-color .18s ease; margin-bottom:12px;
+  }
+  .kc-mini-cart .mc-row:hover{ transform:translateY(-1px); box-shadow:0 12px 30px rgba(43,23,14,.12); border-color:#ead9c6; }
+  .kc-mini-cart .mc-thumb{
+    width:54px;height:54px;border-radius:12px; overflow:hidden; flex:0 0 54px;
+    border:1px solid var(--line); background:#fff7ef;
+  }
+  .kc-mini-cart .mc-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .kc-mini-cart .mc-info{ flex:1; min-width:0 }
+  .kc-mini-cart .mc-title{ font-weight:800; color:var(--cocoa); line-height:1.2; }
+  .kc-mini-cart .mc-price{ color:var(--cocoa); font-weight:800 }
+  .kc-mini-cart .mc-qty .btn{
+    border-radius:999px; font-weight:800; line-height:1;
+    border:1px solid var(--line)!important; padding:.25rem .55rem;
+    background:linear-gradient(135deg,#fff,#fff8f0); color:var(--cocoa);
+  }
+  .kc-mini-cart .mc-qty .btn:hover{ box-shadow:var(--sh1) }
+  .kc-mini-cart .mc-remove{
+    border-radius:999px; border:1px solid #ffd1d7!important; color:#a33!important; background:#fff!important;
+    padding:.25rem .5rem;
+  }
+  .kc-mini-cart .mc-remove:hover{ background:#fff0f2!important }
+
+  /* Top ribbon */
+  .kc-mini-cart .mc-ribbon{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; margin-bottom:10px;
+    border:1px dashed var(--line); border-radius:12px; background:#fffdf8; font-weight:700; color:var(--cocoa);
+  }
+
+  /* Total + sticky checkout bar */
+  .kc-mini-cart .mc-total{
+    display:flex; justify-content:space-between; align-items:center;
+    font-weight:800; color:var(--cocoa); margin-top:6px;
+  }
+  .kc-mini-cart .mc-checkout{
+    position:sticky; bottom:-1px; z-index:1; margin-top:12px; padding-top:12px;
+    background:linear-gradient(180deg, rgba(255,255,255,.65), #fff 35%, #fff);
+    border-top:1px solid var(--line);
+    box-shadow:0 -8px 20px rgba(43,23,14,.06);
+  }
+
+  /* CTA (snack gradient) */
+  .kc-mini-cart .btn-snack{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%;
+    background:linear-gradient(135deg, var(--snack), var(--snack-2));
+    color:#3a1d0f; border:none; border-radius:999px; padding:.6rem 1rem; font-weight:900;
+    box-shadow:0 12px 28px rgba(255,138,0,.25); transition:transform .18s ease, filter .18s ease, box-shadow .18s ease;
+  }
+  .kc-mini-cart .btn-snack:hover{ transform:translateY(-1px); filter:saturate(1.06); box-shadow:0 16px 34px rgba(255,138,0,.34) }
+
+  /* Tiny fade-in for rows */
+  .kc-mini-cart .mc-row{ animation:mc-rise .35s ease both }
+  .kc-mini-cart .mc-row:nth-child(1){animation-delay:.03s}
+  .kc-mini-cart .mc-row:nth-child(2){animation-delay:.06s}
+  .kc-mini-cart .mc-row:nth-child(3){animation-delay:.09s}
+  @keyframes mc-rise{ from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
+</style>
+
+<div class="kc-mini-cart">
+  <div class="mc-ribbon">
+    <i class="bi bi-bag-check"></i>
+    <span>Fresh & fast — free delivery over ₹499</span>
+  </div>
+
   {% for item in order.items.all %}
-    <div class="d-flex align-items-center mb-3">
-      <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 50px; height: 50px; object-fit: cover;" class="rounded me-3">
-      <div class="flex-grow-1">
-        <div class="fw-semibold">{{ item.product.name }}</div>
-        <div class="d-flex align-items-center my-1">
-          <button class="btn btn-sm btn-outline-secondary update-qty" data-id="{{ item.id }}" data-action="decrease">-</button>
-          <span class="mx-2">{{ item.quantity }}</span>
-          <button class="btn btn-sm btn-outline-secondary update-qty" data-id="{{ item.id }}" data-action="increase">+</button>
-        </div>
-        <div class="text-success fw-bold">₹{{ item.product.display_price|floatformat:2 }}</div>
-      </div>
-      <button class="btn btn-sm btn-outline-danger ms-2 remove-item" data-id="{{ item.id }}">&times;</button>
+  <div class="mc-row">
+    <div class="mc-thumb">
+      <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
     </div>
+
+    <div class="mc-info">
+      <div class="mc-title text-truncate" title="{{ item.product.name }}">{{ item.product.name }}</div>
+
+      <div class="d-flex align-items-center mc-qty my-1">
+        <button class="btn btn-sm update-qty" data-id="{{ item.id }}" data-action="decrease" aria-label="Decrease quantity">−</button>
+        <span class="mx-2 fw-bold">{{ item.quantity }}</span>
+        <button class="btn btn-sm update-qty" data-id="{{ item.id }}" data-action="increase" aria-label="Increase quantity">+</button>
+      </div>
+
+      <div class="mc-price">₹{{ item.product.display_price|floatformat:2 }}</div>
+    </div>
+
+    <button class="btn btn-sm mc-remove remove-item ms-1" data-id="{{ item.id }}" aria-label="Remove {{ item.product.name }}">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
   {% endfor %}
-  <hr />
-  <div class="fw-bold text-end fs-5 mb-3">Total: ₹{{ order.total_price|floatformat:2 }}</div>
-  <a href="{% url 'store:checkout' %}" class="btn btn-success w-100">Proceed to Checkout</a>
+
+  <div class="mc-total">
+    <div>Total</div>
+    <div>₹{{ order.total_price|floatformat:2 }}</div>
+  </div>
+
+  <div class="mc-checkout">
+    <a href="{% url 'store:checkout' %}" class="btn-snack">
+      <i class="bi bi-arrow-right-circle"></i> Proceed to Checkout
+    </a>
+  </div>
+</div>
 {% else %}
-  <p>Your cart is empty.</p>
+  <div class="text-center py-4">
+    <div class="mb-2">Your cart is empty.</div>
+    <a href="{% url 'store:shop' %}" class="btn btn-warning">Browse Snacks</a>
+  </div>
 {% endif %}

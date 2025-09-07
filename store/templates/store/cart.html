@@ -1,52 +1,289 @@
 {% extends "store/base.html" %}
 {% block content %}
-<h2 class="mb-4 fw-bold text-success">Your Cart</h2>
+<style>
+/* ====== Snack-Themed Cart (matches Home) ====== */
+:root{
+  /* Use the same ambient image path as Home */
+  --ambient-url: url('/media/banners/ambient-upload.jpg');
 
-{% if order.items.all %}
-<table class="table align-middle">
-  <thead>
-    <tr>
-      <th>Product</th>
-      <th class="text-end">Unit Price</th>
-      <th class="text-center">Qty</th>
-      <th class="text-end">Subtotal</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for item in order.items.all %}
-    {% with unit=item.product.display_price %}
-    <tr>
-      <td>{{ item.product.name }}</td>
-      <td class="text-end">₹{{ unit|floatformat:2 }}</td>
-      <td class="text-center">
-        <form action="{% url 'store:update_cart_quantity' item.id %}" method="post" class="d-inline">
-          {% csrf_token %}
-          <button name="action" value="decrease" class="btn btn-sm btn-outline-secondary">−</button>
-          <span class="mx-2">{{ item.quantity }}</span>
-          <button name="action" value="increase" class="btn btn-sm btn-outline-secondary">+</button>
-        </form>
-      </td>
-      <td class="text-end">₹{{ item.get_total_price|floatformat:2 }}</td>
-      <td class="text-end">
-        <form action="{% url 'store:remove_from_cart' item.id %}" method="post" class="d-inline">
-          {% csrf_token %}
-          <button class="btn btn-sm btn-outline-danger">Remove</button>
-        </form>
-      </td>
-    </tr>
-    {% endwith %}
-    {% endfor %}
-    <tr>
-      <td colspan="3" class="text-end fw-bold">Grand Total</td>
-      <td class="text-end fw-bold">₹{{ order.total_price|floatformat:2 }}</td>
-      <td></td>
-    </tr>
-  </tbody>
-</table>
+  /* Home palette */
+  --snack:#ff7a00; --snack-2:#ffc155; --berry:#ff4d6d;
+  --cocoa:#2b170e; --ink:#3a1d0f;
+  --cream:#fff7ef; --peach:#ffe3c3; --blush:#ffd6ca; --line:#efdfcd;
 
-<a href="{% url 'store:checkout' %}" class="btn btn-success">Proceed to Checkout</a>
-{% else %}
-<p>Your cart is empty.</p>
-{% endif %}
+  --r-lg:18px; --r-md:14px; --r-sm:10px;
+  --sh1:0 8px 24px rgba(43,23,14,.06);
+  --sh2:0 22px 56px rgba(43,23,14,.16);
+}
+
+/* Scene background (ambient image + gradients + glow + grain) */
+.cart-scene{
+  position:relative; border-radius:20px; overflow:hidden;
+  background:
+    radial-gradient(120% 120% at 10% 0%, var(--peach) 0%, var(--cream) 45%, #fff 100%),
+    linear-gradient(120deg, var(--cream), var(--peach), var(--blush));
+  background-size:120% 120%, 200% 200%;
+  animation:sceneShift 18s ease-in-out infinite;
+}
+.cart-scene::before{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background-image: var(--ambient-url);
+  background-size:cover; background-position:center;
+  opacity:.18; mix-blend-mode:multiply;
+  filter:saturate(1.06) contrast(1.03) brightness(1.05);
+  transform:scale(1.08);
+  animation:slowPan 42s ease-in-out infinite alternate;
+}
+.cart-scene::after{
+  content:""; position:absolute; inset:-25% -15%; z-index:1; pointer-events:none;
+  background:
+    conic-gradient(from 180deg at 70% 20%, rgba(255,255,255,.25), transparent 25% 50%, rgba(255,255,255,.18) 75%, transparent 100%),
+    radial-gradient(220px 180px at 15% 10%, rgba(255,170,110,.16), transparent 60%),
+    radial-gradient(260px 220px at 85% 85%, rgba(255,140,160,.14), transparent 60%);
+  animation:glowFloat 24s ease-in-out infinite;
+}
+.scene-grain{ position:absolute; inset:0; z-index:2; pointer-events:none; opacity:.28; mix-blend-mode:soft-light;
+  background-image:radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px);
+  background-size:6px 6px; animation:grainShift 8s steps(2,end) infinite;
+}
+@keyframes sceneShift{0%,100%{background-position:0% 50%,0% 50%}50%{background-position:100% 50%,100% 50%}}
+@keyframes slowPan{0%{transform:scale(1.08) translateX(0)}100%{transform:scale(1.1) translateX(-1.4%)}}
+@keyframes glowFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes grainShift{0%,100%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}50%{transform:translate(-1px,1px)}75%{transform:translate(1px,1px)}}
+
+/* Waves for continuity with Home */
+.wave{display:block;width:100%;height:48px;opacity:.55}
+
+/* Card polish */
+.card-clean{ background:#fff; border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--sh1) }
+.card-clean:hover{ box-shadow:var(--sh2) }
+.card-head{ padding:16px 18px; border-bottom:1px solid var(--line); color:var(--cocoa); font-weight:800 }
+.card-body{ padding:16px 18px }
+
+/* Table styling */
+.table thead th{ border-bottom:1px solid var(--line); color:var(--cocoa) }
+.table tbody tr{ transition:background .2s ease }
+.table tbody tr:hover{ background:rgba(255, 236, 214, .35) }
+.product-cell{ display:flex; align-items:center; gap:12px }
+.product-thumb{
+  width:52px; height:52px; border-radius:12px; object-fit:cover; box-shadow:var(--sh1); border:1px solid var(--line);
+}
+
+/* Qty controls matching home buttons */
+.qty-form .btn{
+  border-radius:999px; font-weight:800;
+  border:1px solid var(--line);
+  background:linear-gradient(135deg, #fff, #fff8f0);
+  color:var(--cocoa);
+}
+.qty-form .btn:hover{ border-color:#e7d5bf; box-shadow:var(--sh1) }
+
+/* Remove button */
+.btn-remove{
+  border-radius:999px; font-weight:700;
+  border:1px solid #ffd1d7; color:#a33; background:#fff; padding:.25rem .6rem;
+}
+.btn-remove:hover{ background:#fff0f2 }
+
+/* CTA buttons */
+.btn-snack{
+  --bg1:var(--snack); --bg2:var(--snack-2);
+  display:inline-flex; align-items:center; gap:8px;
+  background:linear-gradient(135deg, var(--bg1), var(--bg2));
+  color:#3a1d0f; border:none; border-radius:999px; padding:.6rem 1rem; font-weight:900;
+  box-shadow:0 12px 28px rgba(255,138,0,.25);
+  transition:transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+.btn-snack:hover{ transform:translateY(-1px); filter:saturate(1.06); box-shadow:0 16px 34px rgba(255,138,0,.34) }
+
+/* Free shipping progress */
+.free-ship{
+  border:1px dashed var(--line); border-radius:14px; padding:10px 12px; background:#fffdf8;
+}
+.fs-bar{ height:8px; background:#ffe9cc; border-radius:999px; overflow:hidden; margin-top:8px }
+.fs-bar > i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--snack),var(--snack-2)); transition:width .6s ease }
+
+/* Animated totals */
+#animatedGrand{ font-variant-numeric:tabular-nums }
+
+/* Row reveal */
+.reveal-row{ animation:rise .45s ease both } .reveal-row:nth-child(1){animation-delay:.02s} .reveal-row:nth-child(2){animation-delay:.05s} .reveal-row:nth-child(3){animation-delay:.08s}
+@keyframes rise{ from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
+</style>
+
+<!-- top wave -->
+<svg class="wave" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
+  <defs><linearGradient id="cartTop" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity=".0"/>
+  </linearGradient></defs>
+  <path d="M0,0 C150,100 350,0 600,60 C850,120 1050,20 1200,80 L1200,0 L0,0 Z" fill="url(#cartTop)"></path>
+</svg>
+
+<div class="cart-scene my-3 my-md-4">
+  <div class="scene-grain"></div>
+
+  <div class="container py-3 py-md-4">
+    <h2 class="mb-3 fw-bold" style="color:var(--cocoa)"><span style="background:linear-gradient(90deg,var(--snack),var(--snack-2));-webkit-background-clip:text;background-clip:text;color:transparent">Your Cart</span></h2>
+
+    {% if order.items.all %}
+    <div class="row g-3 g-lg-4">
+      <div class="col-lg-8">
+        <div class="card-clean">
+          <div class="card-head d-flex align-items-center justify-content-between">
+            <div>Items</div>
+            <a href="{% url 'store:shop' %}" class="text-decoration-none fw-bold" style="color:var(--ink)">
+              ← Continue shopping
+            </a>
+          </div>
+          <div class="card-body">
+            <div class="free-ship" id="freeShip" data-total="{{ order.total_price|floatformat:2 }}" data-threshold="499">
+              <div class="small" id="fsText">You’re close to <strong>free delivery over ₹499</strong>!</div>
+              <div class="fs-bar"><i id="fsBar"></i></div>
+            </div>
+
+            <div class="table-responsive mt-3">
+              <table class="table align-middle">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th class="text-end">Unit Price</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-end">Subtotal</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in order.items.all %}
+                  {% with unit=item.product.display_price %}
+                  <tr class="reveal-row">
+                    <td>
+                      <div class="product-cell">
+                        {% if item.product.image %}
+                          <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="product-thumb">
+                        {% else %}
+                          <div class="product-thumb d-flex align-items-center justify-content-center" style="background:#fff8f0;color:#a86a00">🍘</div>
+                        {% endif %}
+                        <div class="fw-semibold" style="color:var(--cocoa)">{{ item.product.name }}</div>
+                      </div>
+                    </td>
+                    <td class="text-end">₹{{ unit|floatformat:2 }}</td>
+                    <td class="text-center">
+                      <form action="{% url 'store:update_cart_quantity' item.id %}" method="post" class="d-inline qty-form">
+                        {% csrf_token %}
+                        <button name="action" value="decrease" class="btn btn-sm">−</button>
+                        <span class="mx-2 fw-bold">{{ item.quantity }}</span>
+                        <button name="action" value="increase" class="btn btn-sm">+</button>
+                      </form>
+                    </td>
+                    <td class="text-end">₹{{ item.get_total_price|floatformat:2 }}</td>
+                    <td class="text-end">
+                      <form action="{% url 'store:remove_from_cart' item.id %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-remove"><i class="bi bi-x-lg"></i> Remove</button>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endwith %}
+                  {% endfor %}
+                  <tr>
+                    <td colspan="3" class="text-end fw-bold">Grand Total</td>
+                    <td class="text-end fw-bold" id="animatedGrand" data-grand="{{ order.total_price|floatformat:2 }}">₹{{ order.total_price|floatformat:2 }}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="d-flex gap-2 mt-2">
+              <a href="{% url 'store:shop' %}" class="btn btn-light border fw-bold">← Keep Browsing</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary / Actions -->
+      <div class="col-lg-4">
+        <div class="card-clean" style="position:sticky; top:18px">
+          <div class="card-head">Summary</div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <span class="fw-semibold">Items Total</span>
+              <span>₹{{ order.total_price|floatformat:2 }}</span>
+            </div>
+            <div class="d-flex justify-content-between text-muted">
+              <span>Delivery</span>
+              <span id="shipCost">—</span>
+            </div>
+            <div class="d-flex justify-content-between mt-2 border-top pt-2">
+              <span class="fw-bold">Payable</span>
+              <span class="fw-bold" id="payable">₹{{ order.total_price|floatformat:2 }}</span>
+            </div>
+
+            <a href="{% url 'store:checkout' %}" class="btn-snack w-100 mt-3 justify-content-center">
+              <i class="bi bi-bag-check"></i> Proceed to Checkout
+            </a>
+
+            <div class="small text-muted mt-2">Secure checkout • Easy returns</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% else %}
+      <div class="card-clean">
+        <div class="card-body">
+          <p class="mb-2">Your cart is empty.</p>
+          <a href="{% url 'store:shop' %}" class="btn-snack">Browse Snacks</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- bottom wave -->
+<svg class="wave" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M0,80 C150,20 350,120 600,60 C850,0 1050,100 1200,40 L1200,120 L0,120 Z" fill="white"></path>
+</svg>
+
+<script>
+/* Free shipping progress + delivery label */
+(function(){
+  const box = document.getElementById('freeShip'); if(!box) return;
+  const total = parseFloat((box.dataset.total || "0").replace(/[,₹\s]/g,''));
+  const threshold = parseFloat(box.dataset.threshold || "499");
+  const bar = document.getElementById('fsBar');
+  const text = document.getElementById('fsText');
+  const shipCost = document.getElementById('shipCost');
+  const payable = document.getElementById('payable');
+
+  const pct = Math.max(0, Math.min(1, total/threshold));
+  bar.style.width = (pct*100).toFixed(0) + '%';
+
+  if(total >= threshold){
+    text.innerHTML = '🎉 <strong>Free delivery unlocked!</strong>';
+    shipCost.textContent = 'Free';
+    payable.textContent = '₹' + total.toFixed(2);
+  }else{
+    const remain = (threshold - total).toFixed(2);
+    text.innerHTML = `Add <strong>₹${remain}</strong> more for free delivery`;
+    shipCost.textContent = 'Calculated at checkout';
+    payable.textContent = '₹' + total.toFixed(2);
+  }
+})();
+
+/* Animated grand total counter */
+(function(){
+  const el = document.getElementById('animatedGrand');
+  if(!el) return;
+  const full = parseFloat((el.dataset.grand || "0").replace(/[,₹\s]/g,''));
+  if(isNaN(full)) return;
+  const dur = 700, start = performance.now();
+  function tick(t){
+    const p = Math.min(1, (t - start)/dur);
+    const val = (full * (0.2 + 0.8 * p));
+    el.textContent = '₹' + val.toFixed(2);
+    if(p<1) requestAnimationFrame(tick); else el.textContent = '₹' + full.toFixed(2);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
 {% endblock %}
